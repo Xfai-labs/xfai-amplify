@@ -29,7 +29,7 @@ interface IXFITMigrator {
 // will be transferred to a governance smart contract once XFIT is sufficiently
 // distributed and the community can show to govern itself.
 
-contract Amplify is Ownable, Pausable {
+contract XFaiAmplify is Ownable, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
