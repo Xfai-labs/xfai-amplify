@@ -1,0 +1,7 @@
+node_modules
+.env
+.key
+.infura
+contracts/.DS_Store
+scripts/.DS_Store
+.DS_Store

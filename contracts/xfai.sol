@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "./interfaces/Ixfit.sol";
+import "../contracts/XPoolHandler.sol";
 
 interface IXFITMigrator {
     // Perform LP token migration from legacy UniswapV2 to XFai AMM.
@@ -29,7 +30,7 @@ interface IXFITMigrator {
 // will be transferred to a governance smart contract once XFIT is sufficiently
 // distributed and the community can show to govern itself.
 
-contract XFaiAmplify is Ownable, Pausable {
+contract XFaiAmplify is XPoolHandler, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -37,6 +38,7 @@ contract XFaiAmplify is Ownable, Pausable {
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
+        uint256 inputTokenAmount;
         bool enrolled;
         //
         // We do some fancy math here. Basically, any point in time, the amount of XFITs
@@ -57,6 +59,7 @@ contract XFaiAmplify is Ownable, Pausable {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
+        IERC20 inputToken; // Token in which Single sided liquidity can be provided
         uint256 allocPoint; // How many allocation points assigned to this pool. XFITs to distribute per block.
         uint256 lastRewardBlock; // Last block number that XFITs distribution occurs.
         uint256 accXFITPerShare; // Accumulated XFITs per share, times 1e12. See below.
@@ -126,6 +129,7 @@ contract XFaiAmplify is Ownable, Pausable {
     function add(
         uint256 _allocPoint,
         IERC20 _lpToken,
+        IERC20 _inputToken,
         bool _withUpdate
     ) public onlyOwner {
         if (_withUpdate) {
@@ -137,6 +141,7 @@ contract XFaiAmplify is Ownable, Pausable {
         poolInfo.push(
             PoolInfo({
                 lpToken: _lpToken,
+                inputToken: _inputToken,
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
                 accXFITPerShare: 0
@@ -249,8 +254,27 @@ contract XFaiAmplify is Ownable, Pausable {
         pool.lastRewardBlock = block.number;
     }
 
+    function depositWithToken(
+        uint256 _pid,
+        uint256 _amount,
+        IERC20 _inputToken,
+        uint256 _minPoolTokens
+    ) public whenNotPaused {
+        PoolInfo storage pool = poolInfo[_pid];
+        UserInfo storage user = userInfo[_pid][msg.sender];
+        user.inputTokenAmount = user.inputTokenAmount.add(_amount);
+        uint256 lpTokensBought =
+            poolLiquidity(
+                address(pool.inputToken),
+                address(pool.lpToken),
+                _amount,
+                _minPoolTokens
+            );
+        depositLP(_pid, lpTokensBought);
+    }
+
     // Deposit LP tokens to Amplify for XFIT allocation.
-    function deposit(uint256 _pid, uint256 _amount) public whenNotPaused {
+    function depositLP(uint256 _pid, uint256 _amount) public whenNotPaused {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         if (user.enrolled == false) {
@@ -280,7 +304,7 @@ contract XFaiAmplify is Ownable, Pausable {
     }
 
     // Withdraw LP tokens from Amplify.
-    function withdraw(uint256 _pid, uint256 _amount) public whenNotPaused {
+    function withdrawLP(uint256 _pid, uint256 _amount) public whenNotPaused {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
