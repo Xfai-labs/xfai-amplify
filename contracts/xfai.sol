@@ -38,7 +38,6 @@ contract XFaiAmplify is XPoolHandler, Pausable {
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
-        uint256 inputTokenAmount;
         bool enrolled;
         //
         // We do some fancy math here. Basically, any point in time, the amount of XFITs
@@ -173,10 +172,9 @@ contract XFaiAmplify is XPoolHandler, Pausable {
     function migrate(uint256 _pid) public {
         require(address(migrator) != address(0), "migrate: no migrator");
         PoolInfo storage pool = poolInfo[_pid];
-        IERC20 lpToken = pool.lpToken;
-        uint256 bal = lpToken.balanceOf(address(this));
-        lpToken.safeApprove(address(migrator), bal);
-        IERC20 newLpToken = migrator.migrate(lpToken);
+        uint256 bal = pool.lpToken.balanceOf(address(this));
+        pool.lpToken.safeApprove(address(migrator), bal);
+        IERC20 newLpToken = migrator.migrate(pool.lpToken);
         require(bal == newLpToken.balanceOf(address(this)), "migrate: bad");
         pool.lpToken = newLpToken;
     }
@@ -254,15 +252,12 @@ contract XFaiAmplify is XPoolHandler, Pausable {
         pool.lastRewardBlock = block.number;
     }
 
-    function depositWithToken(
+    function depositLPWithToken(
         uint256 _pid,
         uint256 _amount,
-        IERC20 _inputToken,
         uint256 _minPoolTokens
     ) public whenNotPaused {
         PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
-        user.inputTokenAmount = user.inputTokenAmount.add(_amount);
         uint256 lpTokensBought =
             poolLiquidity(
                 address(pool.inputToken),
@@ -270,11 +265,30 @@ contract XFaiAmplify is XPoolHandler, Pausable {
                 _amount,
                 _minPoolTokens
             );
-        depositLP(_pid, lpTokensBought);
+        _depositInternal(_pid, lpTokensBought, false);
     }
 
     // Deposit LP tokens to Amplify for XFIT allocation.
     function depositLP(uint256 _pid, uint256 _amount) public whenNotPaused {
+        _depositInternal(_pid, _amount, true);
+    }
+
+    function withdrawLPWithToken(uint256 _pid, uint256 _amount) public {
+        _withdrawInternal(_pid, _amount, false);
+        PoolInfo storage pool = poolInfo[_pid];
+        redeemLPTokens(address(pool.lpToken), _amount);
+    }
+
+    // Withdraw LP tokens from Amplify.
+    function withdrawLP(uint256 _pid, uint256 _amount) public whenNotPaused {
+        _withdrawInternal(_pid, _amount, true);
+    }
+
+    function _depositInternal(
+        uint256 _pid,
+        uint256 _amount,
+        bool withLPTokens
+    ) internal {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         if (user.enrolled == false) {
@@ -292,19 +306,24 @@ contract XFaiAmplify is XPoolHandler, Pausable {
             }
         }
         if (_amount > 0) {
-            pool.lpToken.safeTransferFrom(
-                address(msg.sender),
-                address(this),
-                _amount
-            );
+            if (withLPTokens == true) {
+                pool.lpToken.safeTransferFrom(
+                    address(msg.sender),
+                    address(this),
+                    _amount
+                );
+            }
             user.amount = user.amount.add(_amount);
         }
         user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
-    // Withdraw LP tokens from Amplify.
-    function withdrawLP(uint256 _pid, uint256 _amount) public whenNotPaused {
+    function _withdrawInternal(
+        uint256 _pid,
+        uint256 _amount,
+        bool withLPTokens
+    ) internal {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
@@ -319,10 +338,13 @@ contract XFaiAmplify is XPoolHandler, Pausable {
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             uint256 exitFee = _amount.mul(exitFeeFactor).div(100).div(1e18);
-            pool.lpToken.safeTransfer(
-                address(msg.sender),
-                _amount.sub(exitFee)
-            );
+
+            if (withLPTokens) {
+                pool.lpToken.safeTransfer(
+                    address(msg.sender),
+                    _amount.sub(exitFee)
+                );
+            }
             pool.lpToken.safeTransfer(devaddr, exitFee);
         }
         user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e12);

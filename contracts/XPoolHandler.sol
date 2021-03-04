@@ -36,7 +36,85 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         address fromToken,
         address toToken
     );
-    event POOL_LIQUIDITY(address sender, address pool, uint256 amount);
+    event POOL_LIQUIDITY(
+        address sender,
+        address pool,
+        address tokenA,
+        uint256 amountA,
+        address tokenB,
+        uint256 amountB
+    );
+    event REMOVE_LIQUIDITY(
+        address sender,
+        address pool,
+        address tokenA,
+        uint256 amountA,
+        address tokenB,
+        uint256 amountB
+    );
+
+    /**
+    @notice Remove liquidity from a pool
+    @param _FromUniPoolAddress The uniswap pair address to reomve liquidity from
+    @param _lpTokensAmount The amount of LP
+    @return (amountA, amountB) The amount of pair tokens received after removing liquidity
+     */
+    function redeemLPTokens(
+        address _FromUniPoolAddress,
+        uint256 _lpTokensAmount
+    ) public nonReentrant returns (uint256, uint256) {
+        IUniswapV2Pair pair = IUniswapV2Pair(_FromUniPoolAddress);
+
+        require(address(pair) != address(0), "Error: Invalid Unipool Address");
+
+        // get reserves
+        address token0 = pair.token0();
+        address token1 = pair.token1();
+
+        IERC20(_FromUniPoolAddress).safeApprove(
+            address(uniswapRouter),
+            _lpTokensAmount
+        );
+        uint256 amountA;
+        uint256 amountB;
+        if (token0 == wethTokenAddress || token1 == wethTokenAddress) {
+            address _token = token0 == wethTokenAddress ? token1 : token0;
+            (amountA, amountB) = uniswapRouter.removeLiquidityETH(
+                _token,
+                _lpTokensAmount,
+                1,
+                1,
+                address(this),
+                deadline
+            );
+            // send tokens
+            IERC20(_token).safeTransfer(msg.sender, amountA);
+            Address.sendValue(msg.sender, amountB);
+        } else {
+            (amountA, amountB) = uniswapRouter.removeLiquidity(
+                token0,
+                token1,
+                _lpTokensAmount,
+                1,
+                1,
+                address(this),
+                deadline
+            );
+
+            // send tokens
+            IERC20(token0).safeTransfer(msg.sender, amountA);
+            IERC20(token1).safeTransfer(msg.sender, amountB);
+        }
+        emit REMOVE_LIQUIDITY(
+            msg.sender,
+            _FromUniPoolAddress,
+            token0,
+            amountA,
+            token1,
+            amountB
+        );
+        return (amountA, amountB);
+    }
 
     /**
     @notice This function is used to invest in given Uniswap V2 pair through either of the tokens
@@ -62,8 +140,6 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
             );
 
         require(LPBought >= _minPoolTokens, "ERR: High Slippage");
-
-        emit POOL_LIQUIDITY(msg.sender, _pairAddress, LPBought);
 
         // IERC20(_pairAddress).safeTransfer(msg.sender, LPBought);
 
@@ -114,13 +190,24 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
                 _amount
             );
 
-        return
+        (uint256 lpAmount, uint256 amountA, uint256 amountB) =
             _uniDeposit(
                 _ToUniswapToken0,
                 _ToUniswapToken1,
                 token0Bought,
                 token1Bought
             );
+
+        emit POOL_LIQUIDITY(
+            msg.sender,
+            _pairAddress,
+            _ToUniswapToken0,
+            amountA,
+            _ToUniswapToken1,
+            amountB
+        );
+
+        return lpAmount;
     }
 
     function _uniDeposit(
@@ -128,7 +215,14 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         address _ToUnipoolToken1,
         uint256 token0Bought,
         uint256 token1Bought
-    ) internal returns (uint256) {
+    )
+        internal
+        returns (
+            uint256,
+            uint256,
+            uint256
+        )
+    {
         IERC20(_ToUnipoolToken0).safeApprove(address(uniswapRouter), 0);
         IERC20(_ToUnipoolToken1).safeApprove(address(uniswapRouter), 0);
 
@@ -169,7 +263,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
             );
         }
 
-        return LP;
+        return (LP, amountA, amountB);
     }
 
     function _swapTokens(
