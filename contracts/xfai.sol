@@ -26,6 +26,7 @@ contract XFai is XPoolHandler, Pausable {
         uint256 amount; // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
         bool enrolled;
+        uint256 lastDepositedBlock;
         //
         // We do some fancy math here. Basically, any point in time, the amount of XFITs
         // entitled to a user but is pending to be distributed is:
@@ -302,6 +303,10 @@ contract XFai is XPoolHandler, Pausable {
     ) internal returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
+        require(
+            block.number >= user.lastDepositedBlock.add(10),
+            "Withdraw: Can only withdraw after 10 blocks"
+        );
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
         uint256 pending =
