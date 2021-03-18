@@ -73,7 +73,7 @@ contract XPriceOracle {
         if (token == token0) {
             amountOut = price0Average.mul(amountIn).decode144();
         } else {
-            require(token == token1, "ExampleOracleSimple: INVALID_TOKEN");
+            require(token == token1, "XPriceOracle: INVALID_TOKEN");
             amountOut = price1Average.mul(amountIn).decode144();
         }
     }

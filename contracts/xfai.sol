@@ -11,26 +11,13 @@ import "@openzeppelin/contracts/utils/Pausable.sol";
 import "./interfaces/Ixfit.sol";
 import "../contracts/XPoolHandler.sol";
 
-interface IXFITMigrator {
-    // Perform LP token migration from legacy UniswapV2 to XFai AMM.
-    // Take the current LP token address and return the new LP token address from XFai AMM.
-    // Migrator should have full access to the caller's LP token.
-    // Return the new LP token address.
-    //
-    // XXX Migrator must have allowance access to UniswapV2 LP tokens.
-    // XFai must mint EXACTLY the same amount of XFai AMM LP tokens or
-    // else something bad will happen. Traditional UniswapV2 does not
-    // do that so be careful!
-    function migrate(IERC20 token) external returns (IERC20);
-}
-
 // Amplify is XFIT distibutor.
 //
 // Note that it's ownable and the owner wields tremendous power. The ownership
 // will be transferred to a governance smart contract once XFIT is sufficiently
 // distributed and the community can show to govern itself.
 
-contract XFaiAmplify is XPoolHandler, Pausable {
+contract XFai is XPoolHandler, Pausable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -59,6 +46,7 @@ contract XFaiAmplify is XPoolHandler, Pausable {
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
         IERC20 inputToken; // Token in which Single sided liquidity can be provided
+        IXPriceOracle xPoolOracle;
         uint256 allocPoint; // How many allocation points assigned to this pool. XFITs to distribute per block.
         uint256 lastRewardBlock; // Last block number that XFITs distribution occurs.
         uint256 accXFITPerShare; // Accumulated XFITs per share, times 1e12. See below.
@@ -66,6 +54,7 @@ contract XFaiAmplify is XPoolHandler, Pausable {
 
     // The XFIT TOKEN!
     Ixfit public XFIT;
+
     // Dev address.
     address public devaddr;
     // Block number when bonus XFIT period ends.
@@ -79,9 +68,6 @@ contract XFaiAmplify is XPoolHandler, Pausable {
 
     // Exit fee in percentage, scaled by e18. e.g. if exit fee is 2%, then exitFeeFactor should be 2e18
     uint256 public exitFeeFactor;
-    // The migrator contract. It has a lot of power. Can only be set through governance (owner).
-    IXFITMigrator public migrator;
-
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
@@ -90,6 +76,8 @@ contract XFaiAmplify is XPoolHandler, Pausable {
     uint256 public totalAllocPoint = 0;
     // The block number when XFIT mining starts.
     uint256 public startBlock;
+
+    uint256 public fundsSplitFactor;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -105,7 +93,8 @@ contract XFaiAmplify is XPoolHandler, Pausable {
         uint256 _XFITPerBlock,
         uint256 _exitFeeFactor,
         uint256 _startBlock,
-        uint256 _bonusEndBlock
+        uint256 _bonusEndBlock,
+        uint256 _fundsSplitFactor
     ) {
         XFIT = _XFIT;
         devaddr = _devaddr;
@@ -113,6 +102,7 @@ contract XFaiAmplify is XPoolHandler, Pausable {
         bonusEndBlock = _bonusEndBlock;
         startBlock = _startBlock;
         exitFeeFactor = _exitFeeFactor;
+        fundsSplitFactor = _fundsSplitFactor;
     }
 
     function poolLength() external view returns (uint256) {
@@ -129,6 +119,7 @@ contract XFaiAmplify is XPoolHandler, Pausable {
         uint256 _allocPoint,
         IERC20 _lpToken,
         IERC20 _inputToken,
+        IXPriceOracle _xPoolOracle,
         bool _withUpdate
     ) public onlyOwner {
         if (_withUpdate) {
@@ -141,6 +132,7 @@ contract XFaiAmplify is XPoolHandler, Pausable {
             PoolInfo({
                 lpToken: _lpToken,
                 inputToken: _inputToken,
+                xPoolOracle: _xPoolOracle,
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
                 accXFITPerShare: 0
@@ -161,22 +153,6 @@ contract XFaiAmplify is XPoolHandler, Pausable {
             _allocPoint
         );
         poolInfo[_pid].allocPoint = _allocPoint;
-    }
-
-    // Set the migrator contract. Can only be called by the owner.
-    function setMigrator(IXFITMigrator _migrator) public onlyOwner {
-        migrator = _migrator;
-    }
-
-    // Migrate lp token to another lp contract. Can be called by anyone. We trust that migrator contract is good.
-    function migrate(uint256 _pid) public {
-        require(address(migrator) != address(0), "migrate: no migrator");
-        PoolInfo storage pool = poolInfo[_pid];
-        uint256 bal = pool.lpToken.balanceOf(address(this));
-        pool.lpToken.safeApprove(address(migrator), bal);
-        IERC20 newLpToken = migrator.migrate(pool.lpToken);
-        require(bal == newLpToken.balanceOf(address(this)), "migrate: bad");
-        pool.lpToken = newLpToken;
     }
 
     // Return reward multiplier over the given _from to _to block.
@@ -256,14 +232,17 @@ contract XFaiAmplify is XPoolHandler, Pausable {
         uint256 _pid,
         uint256 _amount,
         uint256 _minPoolTokens
-    ) public whenNotPaused {
+    ) public payable whenNotPaused {
         PoolInfo storage pool = poolInfo[_pid];
+
         uint256 lpTokensBought =
             poolLiquidity(
                 address(pool.inputToken),
                 address(pool.lpToken),
+                address(pool.xPoolOracle),
                 _amount,
-                _minPoolTokens
+                _minPoolTokens,
+                fundsSplitFactor
             );
         _depositInternal(_pid, lpTokensBought, false);
     }
@@ -274,9 +253,9 @@ contract XFaiAmplify is XPoolHandler, Pausable {
     }
 
     function withdrawLPWithToken(uint256 _pid, uint256 _amount) public {
-        _withdrawInternal(_pid, _amount, false);
+        uint256 actualWithdrawAmount = _withdrawInternal(_pid, _amount, false);
         PoolInfo storage pool = poolInfo[_pid];
-        redeemLPTokens(address(pool.lpToken), _amount);
+        redeemLPTokens(address(pool.lpToken), actualWithdrawAmount);
     }
 
     // Withdraw LP tokens from Amplify.
@@ -323,7 +302,7 @@ contract XFaiAmplify is XPoolHandler, Pausable {
         uint256 _pid,
         uint256 _amount,
         bool withLPTokens
-    ) internal {
+    ) internal returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
@@ -335,20 +314,23 @@ contract XFaiAmplify is XPoolHandler, Pausable {
         if (pending > 0) {
             safeXFITTransfer(msg.sender, pending);
         }
+        uint256 withdrawableAmount = _amount;
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             uint256 exitFee = _amount.mul(exitFeeFactor).div(100).div(1e18);
 
-            if (withLPTokens) {
+            if (withLPTokens == true) {
                 pool.lpToken.safeTransfer(
                     address(msg.sender),
                     _amount.sub(exitFee)
                 );
             }
             pool.lpToken.safeTransfer(devaddr, exitFee);
+            withdrawableAmount = _amount.sub(exitFee);
         }
         user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
+        return withdrawableAmount;
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
@@ -379,6 +361,14 @@ contract XFaiAmplify is XPoolHandler, Pausable {
         devaddr = _devaddr;
     }
 
+    function setPriceOracle(uint256 _pid, IXPriceOracle _xPoolOracle)
+        public
+        onlyOwner
+    {
+        PoolInfo storage pool = poolInfo[_pid];
+        pool.xPoolOracle = _xPoolOracle;
+    }
+
     function pauseDistribution() public onlyOwner {
         _pause();
     }
@@ -390,6 +380,10 @@ contract XFaiAmplify is XPoolHandler, Pausable {
     function setXFITRewardPerBlock(uint256 _newReward) public onlyOwner {
         massUpdatePools();
         XFITPerBlock = _newReward;
+    }
+
+    function setFundsSplitFactor(uint256 _fundsSplitFactor) public onlyOwner {
+        fundsSplitFactor = _fundsSplitFactor;
     }
 
     function setExitFeeFactor(uint256 _newExitFeeFactor) public onlyOwner {

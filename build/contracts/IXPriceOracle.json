@@ -1,182 +1,44 @@
 {
-  "contractName": "XPoolHandler",
+  "contractName": "IXPriceOracle",
   "abi": [
     {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "previousOwner",
-          "type": "address"
-        },
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address"
-        }
-      ],
-      "name": "OwnershipTransferred",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "sender",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "pool",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "tokenA",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "amountA",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "tokenB",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "amountB",
-          "type": "uint256"
-        }
-      ],
-      "name": "POOL_LIQUIDITY",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "sender",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "pool",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "tokenA",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "amountA",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "tokenB",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "amountB",
-          "type": "uint256"
-        }
-      ],
-      "name": "REMOVE_LIQUIDITY",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "sender",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "uint256",
-          "name": "amount",
-          "type": "uint256"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "fromToken",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "toToken",
-          "type": "address"
-        }
-      ],
-      "name": "SWAP_TOKENS",
-      "type": "event"
-    },
-    {
       "inputs": [],
-      "name": "owner",
+      "name": "update",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amountIn",
+          "type": "uint256"
+        }
+      ],
+      "name": "consult",
       "outputs": [
         {
-          "internalType": "address",
+          "internalType": "uint256",
           "name": "",
-          "type": "address"
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
       "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "renounceOwnership",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [
-        {
-          "internalType": "address",
-          "name": "newOwner",
-          "type": "address"
-        }
-      ],
-      "name": "transferOwnership",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
     }
   ],
-  "metadata": "{\"compiler\":{\"version\":\"0.7.0+commit.9e61f92b\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"pool\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"tokenA\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amountA\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"tokenB\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amountB\",\"type\":\"uint256\"}],\"name\":\"POOL_LIQUIDITY\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"pool\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"tokenA\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amountA\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"tokenB\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amountB\",\"type\":\"uint256\"}],\"name\":\"REMOVE_LIQUIDITY\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"address\",\"name\":\"sender\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"fromToken\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"toToken\",\"type\":\"address\"}],\"name\":\"SWAP_TOKENS\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"owner()\":{\"details\":\"Returns the address of the current owner.\"},\"renounceOwnership()\":{\"details\":\"Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner.\"},\"transferOwnership(address)\":{\"details\":\"Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner.\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Users/ayardi/Work/fetch/xfai-amplify/contracts/XPoolHandler.sol\":\"XPoolHandler\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/ayardi/Work/fetch/xfai-amplify/contracts/XPoolHandler.sol\":{\"keccak256\":\"0x46e037c5baed7568f33639f21e3fb7f4162c8bd75bc20b5826c754aeec37ea6e\",\"urls\":[\"bzz-raw://8f49d2c5b33cbf68787d7dede3727e142d85196e43978eedd226771dd1ad7f45\",\"dweb:/ipfs/QmXi9CtXv4LySNcqdKu5uEwsoLDCGLRJKBSwNomgULGrm6\"]},\"/Users/ayardi/Work/fetch/xfai-amplify/contracts/interfaces/IUniswapV2Factory.sol\":{\"keccak256\":\"0x29dbfaab8f05cce8e6f612384b098bdc029cc4b7ec78dcc0e363c8f17ebdd48f\",\"urls\":[\"bzz-raw://b1e555c0eda5e5272cbbc31699ce5ec8be9d5083fd05c75568a75f5d1f74048e\",\"dweb:/ipfs/QmRwtzWxLvG5HitWGDjvyWvhvcV54VTLCrmJgUyzja8ccG\"]},\"/Users/ayardi/Work/fetch/xfai-amplify/contracts/interfaces/IUniswapV2Pair.sol\":{\"keccak256\":\"0x9b199e8c6598504f16b4c8a5d9364beee743d5dea2e5814d17455d41cdb18a3f\",\"urls\":[\"bzz-raw://cd17b6eb07180f50a9c1e26d9f141379c5cdac0af78671327147bb2f9344a7af\",\"dweb:/ipfs/QmX4hSZ2LbUdfCyAAbmhYycuXFMihvfTatVRMKux77om1B\"]},\"/Users/ayardi/Work/fetch/xfai-amplify/contracts/interfaces/IUniswapV2Router02.sol\":{\"keccak256\":\"0x3052aeb839c2ff7081336927fdde47c4dc8f5bbab4d093bc78207626a2978a92\",\"urls\":[\"bzz-raw://b9d22926d770a8e4b3f8bff969e9b81f9da16de1674049e47b441ab916681d84\",\"dweb:/ipfs/QmaLKfE36pW5nhxa9vHMbztS6fjXjm9c1nb9eGroL7aLcf\"]},\"/Users/ayardi/Work/fetch/xfai-amplify/contracts/lib/Babylonian.sol\":{\"keccak256\":\"0x8d65b53d3c6ddb0362eed95e4da7ae32c4b27430410d972d3b0deb7d4af57882\",\"urls\":[\"bzz-raw://cce8e2fd74a2398eda19abd7bb5450fb7f792b0f78cff99488e5b5470df42455\",\"dweb:/ipfs/QmQi8FqszbcpR6xDVNjqZbLPjq6CfTnvsjjuV93x7fGAxo\"]},\"@openzeppelin/contracts/access/Ownable.sol\":{\"keccak256\":\"0x15e2d5bd4c28a88548074c54d220e8086f638a71ed07e6b3ba5a70066fcf458d\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://90faf5851c02f9bd42c5bfb54d4f0421a2612f50ab80b2c4fa24fa3792071cc2\",\"dweb:/ipfs/QmRGM4F2PcGVF85aTfaA9YBhCHHDqrMhRjyp6fGeBTtirb\"]},\"@openzeppelin/contracts/math/SafeMath.sol\":{\"keccak256\":\"0xcc78a17dd88fa5a2edc60c8489e2f405c0913b377216a5b26b35656b2d0dab52\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://526dc85e1f9b9b45830e202568d267d93dde7a4fcccf4ad7798dadcd92304d3c\",\"dweb:/ipfs/QmaoXMB972J3cSDLtBq3xBo4jLwqD2uzXTwujtSPqkYVhR\"]},\"@openzeppelin/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0x5f02220344881ce43204ae4a6281145a67bc52c2bb1290a791857df3d19d78f5\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://24427744bd3e6cb73c17010119af12a318289c0253a4d9acb8576c9fb3797b08\",\"dweb:/ipfs/QmTLDqpKRBuxGxRAmjgXt9AkXyACW3MtKzi7PYjm5iMfGC\"]},\"@openzeppelin/contracts/token/ERC20/SafeERC20.sol\":{\"keccak256\":\"0xf12dfbe97e6276980b83d2830bb0eb75e0cf4f3e626c2471137f82158ae6a0fc\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://b3a849c2d95e85463909e5b5c920b13e7a11216ca14127085e16d22b9379d52a\",\"dweb:/ipfs/QmUg3CZDbCCcQdroEpexBy5ZFd5vD1UWijWQq9qHZjtJNQ\"]},\"@openzeppelin/contracts/utils/Address.sol\":{\"keccak256\":\"0x28911e614500ae7c607a432a709d35da25f3bc5ddc8bd12b278b66358070c0ea\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://256c8c8af5eb072bc473226ab2b2187149b8fc04f5f4a4820db22527f5ce8e3c\",\"dweb:/ipfs/QmRvi5BhnL7Rxf85KrJhwM6RRhukm4tzoctRdgQEheNyiN\"]},\"@openzeppelin/contracts/utils/Context.sol\":{\"keccak256\":\"0x8d3cb350f04ff49cfb10aef08d87f19dcbaecc8027b0bed12f3275cd12f38cf0\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://ded47ec7c96750f9bd04bbbc84f659992d4ba901cb7b532a52cd468272cf378f\",\"dweb:/ipfs/QmfBrGtQP7rZEqEg6Wz6jh2N2Kukpj1z5v3CGWmAqrzm96\"]},\"@openzeppelin/contracts/utils/ReentrancyGuard.sol\":{\"keccak256\":\"0x8bbbc2f5c10065ee272592ae0a7a6ceb23de2fbd81564ee0bb015ecf404d5f61\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://b95e56c1640d0ef789fc5c16269e141e992f6c8ac97cc6d377bd3825e9cab182\",\"dweb:/ipfs/QmVzaxJZY51EhagrcNnkxoU6Uq17RhATe7aHvtkC6wUkgK\"]}},\"version\":1}",
-  "bytecode": "0x608060405234801561001057600080fd5b50600160008190555060006100296100cd60201b60201c565b905080600160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055508073ffffffffffffffffffffffffffffffffffffffff16600073ffffffffffffffffffffffffffffffffffffffff167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e060405160405180910390a3506100d5565b600033905090565b6104bb806100e46000396000f3fe608060405234801561001057600080fd5b50600436106100415760003560e01c8063715018a6146100465780638da5cb5b14610050578063f2fde38b14610084575b600080fd5b61004e6100c8565b005b610058610238565b604051808273ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b6100c66004803603602081101561009a57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610262565b005b6100d0610457565b73ffffffffffffffffffffffffffffffffffffffff166100ee610238565b73ffffffffffffffffffffffffffffffffffffffff1614610177576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260208152602001807f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e657281525060200191505060405180910390fd5b600073ffffffffffffffffffffffffffffffffffffffff16600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e060405160405180910390a36000600160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff160217905550565b6000600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff16905090565b61026a610457565b73ffffffffffffffffffffffffffffffffffffffff16610288610238565b73ffffffffffffffffffffffffffffffffffffffff1614610311576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260208152602001807f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e657281525060200191505060405180910390fd5b600073ffffffffffffffffffffffffffffffffffffffff168173ffffffffffffffffffffffffffffffffffffffff161415610397576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260268152602001806104606026913960400191505060405180910390fd5b8073ffffffffffffffffffffffffffffffffffffffff16600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e060405160405180910390a380600160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050565b60003390509056fe4f776e61626c653a206e6577206f776e657220697320746865207a65726f2061646472657373a264697066735822122021ff50a9514c9baa9336882d51c6345d67c6f8afb5d025598365977f844043de64736f6c63430007000033",
-  "deployedBytecode": "0x608060405234801561001057600080fd5b50600436106100415760003560e01c8063715018a6146100465780638da5cb5b14610050578063f2fde38b14610084575b600080fd5b61004e6100c8565b005b610058610238565b604051808273ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b6100c66004803603602081101561009a57600080fd5b81019080803573ffffffffffffffffffffffffffffffffffffffff169060200190929190505050610262565b005b6100d0610457565b73ffffffffffffffffffffffffffffffffffffffff166100ee610238565b73ffffffffffffffffffffffffffffffffffffffff1614610177576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260208152602001807f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e657281525060200191505060405180910390fd5b600073ffffffffffffffffffffffffffffffffffffffff16600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e060405160405180910390a36000600160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff160217905550565b6000600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff16905090565b61026a610457565b73ffffffffffffffffffffffffffffffffffffffff16610288610238565b73ffffffffffffffffffffffffffffffffffffffff1614610311576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260208152602001807f4f776e61626c653a2063616c6c6572206973206e6f7420746865206f776e657281525060200191505060405180910390fd5b600073ffffffffffffffffffffffffffffffffffffffff168173ffffffffffffffffffffffffffffffffffffffff161415610397576040517f08c379a00000000000000000000000000000000000000000000000000000000081526004018080602001828103825260268152602001806104606026913960400191505060405180910390fd5b8073ffffffffffffffffffffffffffffffffffffffff16600160009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff167f8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e060405160405180910390a380600160006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff16021790555050565b60003390509056fe4f776e61626c653a206e6577206f776e657220697320746865207a65726f2061646472657373a264697066735822122021ff50a9514c9baa9336882d51c6345d67c6f8afb5d025598365977f844043de64736f6c63430007000033",
+  "metadata": "{\"compiler\":{\"version\":\"0.7.0+commit.9e61f92b\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amountIn\",\"type\":\"uint256\"}],\"name\":\"consult\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"update\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/Users/ayardi/Work/fetch/xfai-amplify/contracts/XPoolHandler.sol\":\"IXPriceOracle\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"/Users/ayardi/Work/fetch/xfai-amplify/contracts/XPoolHandler.sol\":{\"keccak256\":\"0x46e037c5baed7568f33639f21e3fb7f4162c8bd75bc20b5826c754aeec37ea6e\",\"urls\":[\"bzz-raw://8f49d2c5b33cbf68787d7dede3727e142d85196e43978eedd226771dd1ad7f45\",\"dweb:/ipfs/QmXi9CtXv4LySNcqdKu5uEwsoLDCGLRJKBSwNomgULGrm6\"]},\"/Users/ayardi/Work/fetch/xfai-amplify/contracts/interfaces/IUniswapV2Factory.sol\":{\"keccak256\":\"0x29dbfaab8f05cce8e6f612384b098bdc029cc4b7ec78dcc0e363c8f17ebdd48f\",\"urls\":[\"bzz-raw://b1e555c0eda5e5272cbbc31699ce5ec8be9d5083fd05c75568a75f5d1f74048e\",\"dweb:/ipfs/QmRwtzWxLvG5HitWGDjvyWvhvcV54VTLCrmJgUyzja8ccG\"]},\"/Users/ayardi/Work/fetch/xfai-amplify/contracts/interfaces/IUniswapV2Pair.sol\":{\"keccak256\":\"0x9b199e8c6598504f16b4c8a5d9364beee743d5dea2e5814d17455d41cdb18a3f\",\"urls\":[\"bzz-raw://cd17b6eb07180f50a9c1e26d9f141379c5cdac0af78671327147bb2f9344a7af\",\"dweb:/ipfs/QmX4hSZ2LbUdfCyAAbmhYycuXFMihvfTatVRMKux77om1B\"]},\"/Users/ayardi/Work/fetch/xfai-amplify/contracts/interfaces/IUniswapV2Router02.sol\":{\"keccak256\":\"0x3052aeb839c2ff7081336927fdde47c4dc8f5bbab4d093bc78207626a2978a92\",\"urls\":[\"bzz-raw://b9d22926d770a8e4b3f8bff969e9b81f9da16de1674049e47b441ab916681d84\",\"dweb:/ipfs/QmaLKfE36pW5nhxa9vHMbztS6fjXjm9c1nb9eGroL7aLcf\"]},\"/Users/ayardi/Work/fetch/xfai-amplify/contracts/lib/Babylonian.sol\":{\"keccak256\":\"0x8d65b53d3c6ddb0362eed95e4da7ae32c4b27430410d972d3b0deb7d4af57882\",\"urls\":[\"bzz-raw://cce8e2fd74a2398eda19abd7bb5450fb7f792b0f78cff99488e5b5470df42455\",\"dweb:/ipfs/QmQi8FqszbcpR6xDVNjqZbLPjq6CfTnvsjjuV93x7fGAxo\"]},\"@openzeppelin/contracts/access/Ownable.sol\":{\"keccak256\":\"0x15e2d5bd4c28a88548074c54d220e8086f638a71ed07e6b3ba5a70066fcf458d\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://90faf5851c02f9bd42c5bfb54d4f0421a2612f50ab80b2c4fa24fa3792071cc2\",\"dweb:/ipfs/QmRGM4F2PcGVF85aTfaA9YBhCHHDqrMhRjyp6fGeBTtirb\"]},\"@openzeppelin/contracts/math/SafeMath.sol\":{\"keccak256\":\"0xcc78a17dd88fa5a2edc60c8489e2f405c0913b377216a5b26b35656b2d0dab52\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://526dc85e1f9b9b45830e202568d267d93dde7a4fcccf4ad7798dadcd92304d3c\",\"dweb:/ipfs/QmaoXMB972J3cSDLtBq3xBo4jLwqD2uzXTwujtSPqkYVhR\"]},\"@openzeppelin/contracts/token/ERC20/IERC20.sol\":{\"keccak256\":\"0x5f02220344881ce43204ae4a6281145a67bc52c2bb1290a791857df3d19d78f5\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://24427744bd3e6cb73c17010119af12a318289c0253a4d9acb8576c9fb3797b08\",\"dweb:/ipfs/QmTLDqpKRBuxGxRAmjgXt9AkXyACW3MtKzi7PYjm5iMfGC\"]},\"@openzeppelin/contracts/token/ERC20/SafeERC20.sol\":{\"keccak256\":\"0xf12dfbe97e6276980b83d2830bb0eb75e0cf4f3e626c2471137f82158ae6a0fc\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://b3a849c2d95e85463909e5b5c920b13e7a11216ca14127085e16d22b9379d52a\",\"dweb:/ipfs/QmUg3CZDbCCcQdroEpexBy5ZFd5vD1UWijWQq9qHZjtJNQ\"]},\"@openzeppelin/contracts/utils/Address.sol\":{\"keccak256\":\"0x28911e614500ae7c607a432a709d35da25f3bc5ddc8bd12b278b66358070c0ea\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://256c8c8af5eb072bc473226ab2b2187149b8fc04f5f4a4820db22527f5ce8e3c\",\"dweb:/ipfs/QmRvi5BhnL7Rxf85KrJhwM6RRhukm4tzoctRdgQEheNyiN\"]},\"@openzeppelin/contracts/utils/Context.sol\":{\"keccak256\":\"0x8d3cb350f04ff49cfb10aef08d87f19dcbaecc8027b0bed12f3275cd12f38cf0\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://ded47ec7c96750f9bd04bbbc84f659992d4ba901cb7b532a52cd468272cf378f\",\"dweb:/ipfs/QmfBrGtQP7rZEqEg6Wz6jh2N2Kukpj1z5v3CGWmAqrzm96\"]},\"@openzeppelin/contracts/utils/ReentrancyGuard.sol\":{\"keccak256\":\"0x8bbbc2f5c10065ee272592ae0a7a6ceb23de2fbd81564ee0bb015ecf404d5f61\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://b95e56c1640d0ef789fc5c16269e141e992f6c8ac97cc6d377bd3825e9cab182\",\"dweb:/ipfs/QmVzaxJZY51EhagrcNnkxoU6Uq17RhATe7aHvtkC6wUkgK\"]}},\"version\":1}",
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
   "immutableReferences": {},
-  "sourceMap": "699:13495:1:-:0;;;;;;;;;;;;;1645:1:21;1760:7;:22;;;;884:17:12;904:12;:10;;;:12;;:::i;:::-;884:32;;935:9;926:6;;:18;;;;;;;;;;;;;;;;;;992:9;959:43;;988:1;959:43;;;;;;;;;;;;850:159;699:13495:1;;598:104:18;651:15;685:10;678:17;;598:104;:::o;699:13495:1:-;;;;;;;",
-  "deployedSourceMap": "699:13495:1:-:0;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;1717:145:12;;;:::i;:::-;;1085:85;;;:::i;:::-;;;;;;;;;;;;;;;;;;;;;2011:240;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;:::i;:::-;;1717:145;1308:12;:10;:12::i;:::-;1297:23;;:7;:5;:7::i;:::-;:23;;;1289:68;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;1823:1:::1;1786:40;;1807:6;;;;;;;;;;;1786:40;;;;;;;;;;;;1853:1;1836:6;;:19;;;;;;;;;;;;;;;;;;1717:145::o:0;1085:85::-;1131:7;1157:6;;;;;;;;;;;1150:13;;1085:85;:::o;2011:240::-;1308:12;:10;:12::i;:::-;1297:23;;:7;:5;:7::i;:::-;:23;;;1289:68;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;2119:1:::1;2099:22;;:8;:22;;;;2091:73;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;2208:8;2179:38;;2200:6;;;;;;;;;;;2179:38;;;;;;;;;;;;2236:8;2227:6;;:17;;;;;;;;;;;;;;;;;;2011:240:::0;:::o;598:104:18:-;651:15;685:10;678:17;;598:104;:::o",
+  "sourceMap": "",
+  "deployedSourceMap": "",
   "source": "pragma solidity ^0.7.0;\n\nimport \"@openzeppelin/contracts/utils/ReentrancyGuard.sol\";\nimport \"@openzeppelin/contracts/utils/Address.sol\";\nimport \"@openzeppelin/contracts/access/Ownable.sol\";\nimport \"@openzeppelin/contracts/math/SafeMath.sol\";\nimport \"@openzeppelin/contracts/token/ERC20/IERC20.sol\";\nimport \"@openzeppelin/contracts/token/ERC20/SafeERC20.sol\";\n\nimport \"./interfaces/IUniswapV2Router02.sol\";\nimport \"./interfaces/IUniswapV2Pair.sol\";\nimport \"./interfaces/IUniswapV2Factory.sol\";\n\nimport \"./lib/Babylonian.sol\";\n\ninterface IXPriceOracle {\n    function update() external;\n\n    function consult(address token, uint256 amountIn)\n        external\n        view\n        returns (uint256);\n}\n\ncontract XPoolHandler is ReentrancyGuard, Ownable {\n    using SafeMath for uint256;\n    using Address for address;\n    using SafeERC20 for IERC20;\n\n    IUniswapV2Factory private constant UniSwapV2FactoryAddress =\n        IUniswapV2Factory(0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f);\n\n    IUniswapV2Router02 private constant uniswapRouter =\n        IUniswapV2Router02(0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D);\n\n    address private constant wethTokenAddress =\n        0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;\n\n    uint256 private constant deadline =\n        0xf000000000000000000000000000000000000000000000000000000000000000;\n\n    event SWAP_TOKENS(\n        address sender,\n        uint256 amount,\n        address fromToken,\n        address toToken\n    );\n    event POOL_LIQUIDITY(\n        address sender,\n        address pool,\n        address tokenA,\n        uint256 amountA,\n        address tokenB,\n        uint256 amountB\n    );\n    event REMOVE_LIQUIDITY(\n        address sender,\n        address pool,\n        address tokenA,\n        uint256 amountA,\n        address tokenB,\n        uint256 amountB\n    );\n\n    /**\n    @notice Remove liquidity from a pool\n    @param _FromUniPoolAddress The uniswap pair address to reomve liquidity from\n    @param _lpTokensAmount The amount of LP\n    @return (amountA, amountB) The amount of pair tokens received after removing liquidity\n     */\n    function redeemLPTokens(\n        address _FromUniPoolAddress,\n        uint256 _lpTokensAmount\n    ) internal nonReentrant returns (uint256, uint256) {\n        IUniswapV2Pair pair = IUniswapV2Pair(_FromUniPoolAddress);\n\n        require(address(pair) != address(0), \"Error: Invalid Unipool Address\");\n\n        // get reserves\n        address token0 = pair.token0();\n        address token1 = pair.token1();\n\n        IERC20(_FromUniPoolAddress).safeApprove(\n            address(uniswapRouter),\n            _lpTokensAmount\n        );\n        uint256 amountA;\n        uint256 amountB;\n        if (token0 == wethTokenAddress || token1 == wethTokenAddress) {\n            address _token = token0 == wethTokenAddress ? token1 : token0;\n            (amountA, amountB) = uniswapRouter.removeLiquidityETH(\n                _token,\n                _lpTokensAmount,\n                1,\n                1,\n                address(this),\n                deadline\n            );\n            // send tokens\n            IERC20(_token).safeTransfer(msg.sender, amountA);\n            Address.sendValue(msg.sender, amountB);\n        } else {\n            (amountA, amountB) = uniswapRouter.removeLiquidity(\n                token0,\n                token1,\n                _lpTokensAmount,\n                1,\n                1,\n                address(this),\n                deadline\n            );\n\n            // send tokens\n            IERC20(token0).safeTransfer(msg.sender, amountA);\n            IERC20(token1).safeTransfer(msg.sender, amountB);\n        }\n        emit REMOVE_LIQUIDITY(\n            msg.sender,\n            _FromUniPoolAddress,\n            token0,\n            amountA,\n            token1,\n            amountB\n        );\n        return (amountA, amountB);\n    }\n\n    /**\n    @notice This function is used to invest in given Uniswap V2 pair through either of the tokens\n    @param _FromTokenContractAddress The ERC20 token used for investment (address(0x00) if ether)\n    @param _pairAddress The Uniswap pair address\n    @param _amount The amount of fromToken to invest\n    @param _minPoolTokens Reverts if less tokens received than this\n    @return Amount of LP bought\n     */\n    function poolLiquidity(\n        address _FromTokenContractAddress,\n        address _pairAddress,\n        address _xPoolOracle,\n        uint256 _amount,\n        uint256 _minPoolTokens,\n        uint256 _fundsSplitFactor\n    ) internal nonReentrant returns (uint256) {\n        uint256 toInvest = _pullTokens(_FromTokenContractAddress, _amount);\n        uint256 LPBought;\n\n        (address _ToUniswapToken0, address _ToUniswapToken1) =\n            _getPairTokens(_pairAddress);\n\n        if (_FromTokenContractAddress == _ToUniswapToken0) {\n            LPBought = _poolLiquidityInternal(\n                _FromTokenContractAddress,\n                _ToUniswapToken1,\n                _pairAddress,\n                _xPoolOracle,\n                toInvest,\n                _fundsSplitFactor\n            );\n        } else {\n            LPBought = _poolLiquidityInternal(\n                _FromTokenContractAddress,\n                _ToUniswapToken0,\n                _pairAddress,\n                _xPoolOracle,\n                toInvest,\n                _fundsSplitFactor\n            );\n        }\n\n        require(LPBought >= _minPoolTokens, \"ERR: High Slippage\");\n\n        IXPriceOracle(_xPoolOracle).update();\n\n        return LPBought;\n    }\n\n    function _getPairTokens(address _pairAddress)\n        internal\n        pure\n        returns (address token0, address token1)\n    {\n        IUniswapV2Pair uniPair = IUniswapV2Pair(_pairAddress);\n        token0 = uniPair.token0();\n        token1 = uniPair.token1();\n    }\n\n    function _pullTokens(address token, uint256 amount)\n        internal\n        returns (uint256 value)\n    {\n        if (token == address(0)) {\n            require(msg.value > 0, \"No eth sent\");\n            return msg.value;\n        }\n        require(amount > 0, \"Invalid token amount\");\n        require(msg.value == 0, \"Eth sent with token\");\n\n        //transfer token\n        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);\n\n        return amount;\n    }\n\n    // Variables required to compute the dynamic swap amount and paths\n    struct TokenSwapVars {\n        uint256 amountToSwap;\n        uint256 destTokensAmount;\n        uint256 fromTokensBought;\n        uint256 toTokensBought;\n        uint256 destTokenReserve;\n    }\n\n    // This checks if its possible to swap Incoming tokens for XFit from the contract. If its not possible, then uses Uniswap to swap the tokens.\n    function _poolLiquidityInternal(\n        address _FromTokenContractAddress,\n        address _ToTokenContractAddress,\n        address _pairAddress,\n        address _xPoolOracle,\n        uint256 _amount,\n        uint256 _fundsSplitFactor\n    ) internal returns (uint256) {\n        TokenSwapVars memory tokenSwapVars;\n\n        tokenSwapVars.amountToSwap = _amount.div(2);\n\n        // Convert amountToSwap to equivalent number of XFit tokens by quering prie oracle\n        tokenSwapVars.destTokensAmount = IXPriceOracle(_xPoolOracle).consult(\n            _FromTokenContractAddress,\n            tokenSwapVars.amountToSwap\n        );\n\n        // How much of the incoming funds should be used to swap for XFit again\n        uint256 splittedFunds =\n            tokenSwapVars.amountToSwap.mul(_fundsSplitFactor).div(1e18);\n\n        // Contract's balance of XFit tokens\n        tokenSwapVars.destTokenReserve = IERC20(_ToTokenContractAddress)\n            .balanceOf(address(this));\n\n        // If XFit are available in the contract, swap internally\n        if (tokenSwapVars.destTokensAmount < tokenSwapVars.destTokenReserve) {\n            tokenSwapVars.fromTokensBought = tokenSwapVars.amountToSwap;\n            tokenSwapVars.toTokensBought = tokenSwapVars.destTokensAmount;\n            // Swap the splittedFunds portion of incoming funding to buyBack XFit\n            swapSplittedFunds(\n                _FromTokenContractAddress,\n                _ToTokenContractAddress,\n                splittedFunds\n            );\n        }\n\n        // else use uniswap\n        if (tokenSwapVars.destTokensAmount >= tokenSwapVars.destTokenReserve) {\n            // divide intermediate into appropriate amount to add liquidity using single side liquidity provision logic descrobed here: https://blog.alphafinance.io/onesideduniswap/\n            (\n                tokenSwapVars.fromTokensBought,\n                tokenSwapVars.toTokensBought\n            ) = _swapTokens(\n                _FromTokenContractAddress,\n                IUniswapV2Pair(_pairAddress),\n                _amount\n            );\n        }\n\n        // Add liquidity to Uniswap\n        (uint256 lpAmount, uint256 amountA, uint256 amountB) =\n            _uniDeposit(\n                _FromTokenContractAddress,\n                _ToTokenContractAddress,\n                tokenSwapVars.fromTokensBought,\n                tokenSwapVars.toTokensBought\n            );\n\n        emit POOL_LIQUIDITY(\n            msg.sender,\n            _pairAddress,\n            _FromTokenContractAddress,\n            amountA,\n            _ToTokenContractAddress,\n            amountB\n        );\n\n        return lpAmount;\n    }\n\n    function swapSplittedFunds(\n        address _FromTokenContractAddress,\n        address _ToTokenContractAddress,\n        uint256 _splittedFunds\n    ) internal {\n        _swapTokensInternal(\n            _FromTokenContractAddress,\n            _ToTokenContractAddress,\n            _splittedFunds\n        );\n    }\n\n    function _uniDeposit(\n        address _ToUnipoolToken0,\n        address _ToUnipoolToken1,\n        uint256 token0Bought,\n        uint256 token1Bought\n    )\n        internal\n        returns (\n            uint256,\n            uint256,\n            uint256\n        )\n    {\n        IERC20(_ToUnipoolToken0).safeApprove(address(uniswapRouter), 0);\n        IERC20(_ToUnipoolToken1).safeApprove(address(uniswapRouter), 0);\n\n        IERC20(_ToUnipoolToken0).safeApprove(\n            address(uniswapRouter),\n            token0Bought\n        );\n        IERC20(_ToUnipoolToken1).safeApprove(\n            address(uniswapRouter),\n            token1Bought\n        );\n\n        (uint256 amountA, uint256 amountB, uint256 LP) =\n            uniswapRouter.addLiquidity(\n                _ToUnipoolToken0,\n                _ToUnipoolToken1,\n                token0Bought,\n                token1Bought,\n                1,\n                1,\n                address(this),\n                deadline\n            );\n\n        //Returning Residue in token0, if any.\n        if (token0Bought.sub(amountA) > 0) {\n            IERC20(_ToUnipoolToken0).safeTransfer(\n                msg.sender,\n                token0Bought.sub(amountA)\n            );\n        }\n\n        //Returning Residue in token1, if any\n        if (token1Bought.sub(amountB) > 0) {\n            IERC20(_ToUnipoolToken1).safeTransfer(\n                msg.sender,\n                token1Bought.sub(amountB)\n            );\n        }\n\n        return (LP, amountA, amountB);\n    }\n\n    function _swapTokens(\n        address _fromContractAddress,\n        IUniswapV2Pair _pair,\n        uint256 _amount\n    ) internal returns (uint256 fromTokensBought, uint256 toTokensBought) {\n        (address _ToUnipoolToken0, address _ToUnipoolToken1) =\n            _getPairTokens(address(_pair));\n\n        (uint256 res0, uint256 res1, ) = _pair.getReserves();\n\n        if (_fromContractAddress == _ToUnipoolToken0) {\n            uint256 amountToSwap = calculateSwapInAmount(res0, _amount);\n            //if no reserve or a new _pair is created\n            if (amountToSwap <= 0) amountToSwap = _amount.div(2);\n            toTokensBought = _swapTokensInternal(\n                _fromContractAddress,\n                _ToUnipoolToken1,\n                amountToSwap\n            );\n            fromTokensBought = _amount.sub(amountToSwap);\n        } else {\n            uint256 amountToSwap = calculateSwapInAmount(res1, _amount);\n            //if no reserve or a new _pair is created\n            if (amountToSwap <= 0) amountToSwap = _amount.div(2);\n            fromTokensBought = _swapTokensInternal(\n                _fromContractAddress,\n                _ToUnipoolToken0,\n                amountToSwap\n            );\n            toTokensBought = _amount.sub(amountToSwap);\n        }\n    }\n\n    function calculateSwapInAmount(uint256 reserveIn, uint256 userIn)\n        internal\n        pure\n        returns (uint256)\n    {\n        return\n            Babylonian\n                .sqrt(\n                reserveIn.mul(userIn.mul(3988000) + reserveIn.mul(3988009))\n            )\n                .sub(reserveIn.mul(1997)) / 1994;\n    }\n\n    /**\n    @notice This function is used to swap ERC20 <> ERC20\n    @param _FromTokenContractAddress The token address to swap from.\n    @param _ToTokenContractAddress The token address to swap to. \n    @param tokens2Trade The amount of tokens to swap\n    @return tokenBought The quantity of tokens bought\n    */\n    function _swapTokensInternal(\n        address _FromTokenContractAddress,\n        address _ToTokenContractAddress,\n        uint256 tokens2Trade\n    ) internal returns (uint256 tokenBought) {\n        if (_FromTokenContractAddress == _ToTokenContractAddress) {\n            return tokens2Trade;\n        }\n        IERC20(_FromTokenContractAddress).safeApprove(\n            address(uniswapRouter),\n            0\n        );\n        IERC20(_FromTokenContractAddress).safeApprove(\n            address(uniswapRouter),\n            tokens2Trade\n        );\n\n        address[] memory path = new address[](2);\n        path[0] = _FromTokenContractAddress;\n        path[1] = _ToTokenContractAddress;\n\n        tokenBought = uniswapRouter.swapExactTokensForTokens(\n            tokens2Trade,\n            1,\n            path,\n            address(this),\n            deadline\n        )[path.length - 1];\n\n        require(tokenBought > 0, \"Error Swapping Tokens 2\");\n        emit SWAP_TOKENS(\n            msg.sender,\n            tokens2Trade,\n            _FromTokenContractAddress,\n            _ToTokenContractAddress\n        );\n    }\n}\n",
   "sourcePath": "/Users/ayardi/Work/fetch/xfai-amplify/contracts/XPoolHandler.sol",
   "ast": {
@@ -27819,20 +27681,10 @@
   },
   "networks": {},
   "schemaVersion": "3.3.2",
-  "updatedAt": "2021-03-17T14:06:23.275Z",
+  "updatedAt": "2021-03-17T14:06:23.259Z",
   "devdoc": {
     "kind": "dev",
-    "methods": {
-      "owner()": {
-        "details": "Returns the address of the current owner."
-      },
-      "renounceOwnership()": {
-        "details": "Leaves the contract without owner. It will not be possible to call `onlyOwner` functions anymore. Can only be called by the current owner. NOTE: Renouncing ownership will leave the contract without an owner, thereby removing any functionality that is only available to the owner."
-      },
-      "transferOwnership(address)": {
-        "details": "Transfers ownership of the contract to a new account (`newOwner`). Can only be called by the current owner."
-      }
-    },
+    "methods": {},
     "version": 1
   },
   "userdoc": {

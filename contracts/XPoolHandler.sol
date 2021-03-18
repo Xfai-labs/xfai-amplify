@@ -13,6 +13,15 @@ import "./interfaces/IUniswapV2Factory.sol";
 
 import "./lib/Babylonian.sol";
 
+interface IXPriceOracle {
+    function update() external;
+
+    function consult(address token, uint256 amountIn)
+        external
+        view
+        returns (uint256);
+}
+
 contract XPoolHandler is ReentrancyGuard, Ownable {
     using SafeMath for uint256;
     using Address for address;
@@ -62,7 +71,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
     function redeemLPTokens(
         address _FromUniPoolAddress,
         uint256 _lpTokensAmount
-    ) public nonReentrant returns (uint256, uint256) {
+    ) internal nonReentrant returns (uint256, uint256) {
         IUniswapV2Pair pair = IUniswapV2Pair(_FromUniPoolAddress);
 
         require(address(pair) != address(0), "Error: Invalid Unipool Address");
@@ -127,21 +136,40 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
     function poolLiquidity(
         address _FromTokenContractAddress,
         address _pairAddress,
+        address _xPoolOracle,
         uint256 _amount,
-        uint256 _minPoolTokens
-    ) public payable nonReentrant returns (uint256) {
+        uint256 _minPoolTokens,
+        uint256 _fundsSplitFactor
+    ) internal nonReentrant returns (uint256) {
         uint256 toInvest = _pullTokens(_FromTokenContractAddress, _amount);
+        uint256 LPBought;
 
-        uint256 LPBought =
-            _poolLiquidityInternal(
+        (address _ToUniswapToken0, address _ToUniswapToken1) =
+            _getPairTokens(_pairAddress);
+
+        if (_FromTokenContractAddress == _ToUniswapToken0) {
+            LPBought = _poolLiquidityInternal(
                 _FromTokenContractAddress,
+                _ToUniswapToken1,
                 _pairAddress,
-                toInvest
+                _xPoolOracle,
+                toInvest,
+                _fundsSplitFactor
             );
+        } else {
+            LPBought = _poolLiquidityInternal(
+                _FromTokenContractAddress,
+                _ToUniswapToken0,
+                _pairAddress,
+                _xPoolOracle,
+                toInvest,
+                _fundsSplitFactor
+            );
+        }
 
         require(LPBought >= _minPoolTokens, "ERR: High Slippage");
 
-        // IERC20(_pairAddress).safeTransfer(msg.sender, LPBought);
+        IXPriceOracle(_xPoolOracle).update();
 
         return LPBought;
     }
@@ -173,41 +201,98 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         return amount;
     }
 
+    // Variables required to compute the dynamic swap amount and paths
+    struct TokenSwapVars {
+        uint256 amountToSwap;
+        uint256 destTokensAmount;
+        uint256 fromTokensBought;
+        uint256 toTokensBought;
+        uint256 destTokenReserve;
+    }
+
+    // This checks if its possible to swap Incoming tokens for XFit from the contract. If its not possible, then uses Uniswap to swap the tokens.
     function _poolLiquidityInternal(
         address _FromTokenContractAddress,
+        address _ToTokenContractAddress,
         address _pairAddress,
-        uint256 _amount
+        address _xPoolOracle,
+        uint256 _amount,
+        uint256 _fundsSplitFactor
     ) internal returns (uint256) {
-        (address _ToUniswapToken0, address _ToUniswapToken1) =
-            _getPairTokens(_pairAddress);
+        TokenSwapVars memory tokenSwapVars;
 
-        // divide intermediate into appropriate amount to add liquidity
-        (uint256 token0Bought, uint256 token1Bought) =
-            _swapTokens(
+        tokenSwapVars.amountToSwap = _amount.div(2);
+
+        // Convert amountToSwap to equivalent number of XFit tokens by quering prie oracle
+        tokenSwapVars.destTokensAmount = IXPriceOracle(_xPoolOracle).consult(
+            _FromTokenContractAddress,
+            tokenSwapVars.amountToSwap
+        );
+
+        // How much of the incoming funds should be used to swap for XFit again
+        uint256 splittedFunds =
+            tokenSwapVars.amountToSwap.mul(_fundsSplitFactor).div(1e18);
+
+        // Contract's balance of XFit tokens
+        tokenSwapVars.destTokenReserve = IERC20(_ToTokenContractAddress)
+            .balanceOf(address(this));
+
+        // If XFit are available in the contract, swap internally
+        if (tokenSwapVars.destTokensAmount < tokenSwapVars.destTokenReserve) {
+            tokenSwapVars.fromTokensBought = tokenSwapVars.amountToSwap;
+            tokenSwapVars.toTokensBought = tokenSwapVars.destTokensAmount;
+            // Swap the splittedFunds portion of incoming funding to buyBack XFit
+            swapSplittedFunds(
                 _FromTokenContractAddress,
-                _ToUniswapToken0,
-                _ToUniswapToken1,
+                _ToTokenContractAddress,
+                splittedFunds
+            );
+        }
+
+        // else use uniswap
+        if (tokenSwapVars.destTokensAmount >= tokenSwapVars.destTokenReserve) {
+            // divide intermediate into appropriate amount to add liquidity using single side liquidity provision logic descrobed here: https://blog.alphafinance.io/onesideduniswap/
+            (
+                tokenSwapVars.fromTokensBought,
+                tokenSwapVars.toTokensBought
+            ) = _swapTokens(
+                _FromTokenContractAddress,
+                IUniswapV2Pair(_pairAddress),
                 _amount
             );
+        }
 
+        // Add liquidity to Uniswap
         (uint256 lpAmount, uint256 amountA, uint256 amountB) =
             _uniDeposit(
-                _ToUniswapToken0,
-                _ToUniswapToken1,
-                token0Bought,
-                token1Bought
+                _FromTokenContractAddress,
+                _ToTokenContractAddress,
+                tokenSwapVars.fromTokensBought,
+                tokenSwapVars.toTokensBought
             );
 
         emit POOL_LIQUIDITY(
             msg.sender,
             _pairAddress,
-            _ToUniswapToken0,
+            _FromTokenContractAddress,
             amountA,
-            _ToUniswapToken1,
+            _ToTokenContractAddress,
             amountB
         );
 
         return lpAmount;
+    }
+
+    function swapSplittedFunds(
+        address _FromTokenContractAddress,
+        address _ToTokenContractAddress,
+        uint256 _splittedFunds
+    ) internal {
+        _swapTokensInternal(
+            _FromTokenContractAddress,
+            _ToTokenContractAddress,
+            _splittedFunds
+        );
     }
 
     function _uniDeposit(
@@ -268,38 +353,34 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
 
     function _swapTokens(
         address _fromContractAddress,
-        address _ToUnipoolToken0,
-        address _ToUnipoolToken1,
+        IUniswapV2Pair _pair,
         uint256 _amount
-    ) internal returns (uint256 token0Bought, uint256 token1Bought) {
-        IUniswapV2Pair pair =
-            IUniswapV2Pair(
-                UniSwapV2FactoryAddress.getPair(
-                    _ToUnipoolToken0,
-                    _ToUnipoolToken1
-                )
-            );
-        (uint256 res0, uint256 res1, ) = pair.getReserves();
+    ) internal returns (uint256 fromTokensBought, uint256 toTokensBought) {
+        (address _ToUnipoolToken0, address _ToUnipoolToken1) =
+            _getPairTokens(address(_pair));
+
+        (uint256 res0, uint256 res1, ) = _pair.getReserves();
+
         if (_fromContractAddress == _ToUnipoolToken0) {
             uint256 amountToSwap = calculateSwapInAmount(res0, _amount);
-            //if no reserve or a new pair is created
+            //if no reserve or a new _pair is created
             if (amountToSwap <= 0) amountToSwap = _amount.div(2);
-            token1Bought = _swapTokensInternal(
+            toTokensBought = _swapTokensInternal(
                 _fromContractAddress,
                 _ToUnipoolToken1,
                 amountToSwap
             );
-            token0Bought = _amount.sub(amountToSwap);
+            fromTokensBought = _amount.sub(amountToSwap);
         } else {
             uint256 amountToSwap = calculateSwapInAmount(res1, _amount);
-            //if no reserve or a new pair is created
+            //if no reserve or a new _pair is created
             if (amountToSwap <= 0) amountToSwap = _amount.div(2);
-            token0Bought = _swapTokensInternal(
+            fromTokensBought = _swapTokensInternal(
                 _fromContractAddress,
                 _ToUnipoolToken0,
                 amountToSwap
             );
-            token1Bought = _amount.sub(amountToSwap);
+            toTokensBought = _amount.sub(amountToSwap);
         }
     }
 
