@@ -14,8 +14,8 @@ module.exports = function (deployer) {
       "5000000000000000000", // Exit Fee Percentage
       23885245, // Reward start block
       23887111, // Bonus rewards end block
-      "500000000000000000", //FundsSplitFactor
-      "5000000000000000000000" // xFitThreeshold
+      "5000000000000000000000", // xFitThreeshold
+      "500000000000000000" //FundsSplitFactor
     );
     const xfai = await XFai.deployed();
     await xFit.transfer(xfai.address, "100000000000000000000000");

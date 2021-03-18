@@ -256,7 +256,9 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
                 _ToTokenContractAddress,
                 splittedFunds
             );
-            totalRaised = totalRaised.add(tokenSwapVars.amountToSwap);
+            totalRaised = totalRaised.add(
+                tokenSwapVars.amountToSwap.sub(splittedFunds)
+            );
         }
 
         // else use uniswap
