@@ -77,8 +77,6 @@ contract XFai is XPoolHandler, Pausable {
     // The block number when XFIT mining starts.
     uint256 public startBlock;
 
-    uint256 public fundsSplitFactor;
-
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
     event EmergencyWithdraw(
@@ -94,15 +92,15 @@ contract XFai is XPoolHandler, Pausable {
         uint256 _exitFeeFactor,
         uint256 _startBlock,
         uint256 _bonusEndBlock,
+        uint256 _xFitThreeshold,
         uint256 _fundsSplitFactor
-    ) {
+    ) XPoolHandler(_xFitThreeshold, _fundsSplitFactor) {
         XFIT = _XFIT;
         devaddr = _devaddr;
         XFITPerBlock = _XFITPerBlock;
         bonusEndBlock = _bonusEndBlock;
         startBlock = _startBlock;
         exitFeeFactor = _exitFeeFactor;
-        fundsSplitFactor = _fundsSplitFactor;
     }
 
     function poolLength() external view returns (uint256) {
@@ -241,8 +239,7 @@ contract XFai is XPoolHandler, Pausable {
                 address(pool.lpToken),
                 address(pool.xPoolOracle),
                 _amount,
-                _minPoolTokens,
-                fundsSplitFactor
+                _minPoolTokens
             );
         _depositInternal(_pid, lpTokensBought, false);
     }
@@ -382,15 +379,19 @@ contract XFai is XPoolHandler, Pausable {
         XFITPerBlock = _newReward;
     }
 
-    function setFundsSplitFactor(uint256 _fundsSplitFactor) public onlyOwner {
-        fundsSplitFactor = _fundsSplitFactor;
-    }
-
     function setExitFeeFactor(uint256 _newExitFeeFactor) public onlyOwner {
         exitFeeFactor = _newExitFeeFactor;
     }
 
     function withdrawAdminXFIT(uint256 amount) public onlyOwner {
         XFIT.transfer(msg.sender, amount);
+    }
+
+    function withdrawAdminFunding(uint256 _pid, uint256 _amount)
+        public
+        onlyOwner
+    {
+        PoolInfo memory pool = poolInfo[_pid];
+        pool.inputToken.safeTransfer(msg.sender, _amount);
     }
 }

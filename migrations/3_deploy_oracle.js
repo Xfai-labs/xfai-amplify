@@ -5,7 +5,7 @@ module.exports = function (deployer) {
     // Pass the pair address to oracle contract
     await deployer.deploy(
       XPriceOracle,
-      "0x64012fdcB2BC4aeB8072b54579742A5c81B24De7"
+      "0x64012fdcB2BC4aeB8072b54579742A5c81B24De7"  // Pair address
     );
   });
 };

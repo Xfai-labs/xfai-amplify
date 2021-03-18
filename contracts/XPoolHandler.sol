@@ -39,6 +39,10 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
     uint256 private constant deadline =
         0xf000000000000000000000000000000000000000000000000000000000000000;
 
+    uint256 public totalRaised;
+    uint256 private xFitThreeshold;
+    uint256 public fundsSplitFactor;
+
     event SWAP_TOKENS(
         address sender,
         uint256 amount,
@@ -61,6 +65,11 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         address tokenB,
         uint256 amountB
     );
+
+    constructor(uint256 _xFitThreeshold, uint256 _fundsSplitFactor) {
+        xFitThreeshold = _xFitThreeshold;
+        fundsSplitFactor = _fundsSplitFactor;
+    }
 
     /**
     @notice Remove liquidity from a pool
@@ -138,8 +147,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         address _pairAddress,
         address _xPoolOracle,
         uint256 _amount,
-        uint256 _minPoolTokens,
-        uint256 _fundsSplitFactor
+        uint256 _minPoolTokens
     ) internal nonReentrant returns (uint256) {
         uint256 toInvest = _pullTokens(_FromTokenContractAddress, _amount);
         uint256 LPBought;
@@ -153,8 +161,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
                 _ToUniswapToken1,
                 _pairAddress,
                 _xPoolOracle,
-                toInvest,
-                _fundsSplitFactor
+                toInvest
             );
         } else {
             LPBought = _poolLiquidityInternal(
@@ -162,13 +169,13 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
                 _ToUniswapToken0,
                 _pairAddress,
                 _xPoolOracle,
-                toInvest,
-                _fundsSplitFactor
+                toInvest
             );
         }
 
         require(LPBought >= _minPoolTokens, "ERR: High Slippage");
 
+        // Update the price oracle cumulative prices for the pair
         IXPriceOracle(_xPoolOracle).update();
 
         return LPBought;
@@ -216,8 +223,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         address _ToTokenContractAddress,
         address _pairAddress,
         address _xPoolOracle,
-        uint256 _amount,
-        uint256 _fundsSplitFactor
+        uint256 _amount
     ) internal returns (uint256) {
         TokenSwapVars memory tokenSwapVars;
 
@@ -231,14 +237,17 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
 
         // How much of the incoming funds should be used to swap for XFit again
         uint256 splittedFunds =
-            tokenSwapVars.amountToSwap.mul(_fundsSplitFactor).div(1e18);
+            tokenSwapVars.amountToSwap.mul(fundsSplitFactor).div(1e18);
 
         // Contract's balance of XFit tokens
         tokenSwapVars.destTokenReserve = IERC20(_ToTokenContractAddress)
             .balanceOf(address(this));
 
         // If XFit are available in the contract, swap internally
-        if (tokenSwapVars.destTokensAmount < tokenSwapVars.destTokenReserve) {
+        if (
+            tokenSwapVars.destTokensAmount <
+            (tokenSwapVars.destTokenReserve.sub(xFitThreeshold))
+        ) {
             tokenSwapVars.fromTokensBought = tokenSwapVars.amountToSwap;
             tokenSwapVars.toTokensBought = tokenSwapVars.destTokensAmount;
             // Swap the splittedFunds portion of incoming funding to buyBack XFit
@@ -247,10 +256,14 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
                 _ToTokenContractAddress,
                 splittedFunds
             );
+            totalRaised = totalRaised.add(tokenSwapVars.amountToSwap);
         }
 
         // else use uniswap
-        if (tokenSwapVars.destTokensAmount >= tokenSwapVars.destTokenReserve) {
+        if (
+            tokenSwapVars.destTokensAmount >=
+            (tokenSwapVars.destTokenReserve.sub(xFitThreeshold))
+        ) {
             // divide intermediate into appropriate amount to add liquidity using single side liquidity provision logic descrobed here: https://blog.alphafinance.io/onesideduniswap/
             (
                 tokenSwapVars.fromTokensBought,
@@ -440,5 +453,15 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
             _FromTokenContractAddress,
             _ToTokenContractAddress
         );
+    }
+
+    // Owner function
+
+    function _setXFitThreeshold(uint256 _xFitThreeshold) public onlyOwner {
+        xFitThreeshold = _xFitThreeshold;
+    }
+
+    function setFundsSplitFactor(uint256 _fundsSplitFactor) public onlyOwner {
+        fundsSplitFactor = _fundsSplitFactor;
     }
 }
