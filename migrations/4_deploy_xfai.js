@@ -9,7 +9,7 @@ module.exports = function (deployer) {
     await deployer.deploy(
       XFai,
       xFit.address,
-      "0x0EC23E0d5Db74275Aa6B2A7bECec970A3636Db20", // Dev Address
+      "0x77c940F10a7765B49273418aDF5750979718e85f", // Dev Address
       "50000000000000000", // Drip rate
       "5000000000000000000", // Exit Fee Percentage
       23885245, // Reward start block
@@ -20,7 +20,6 @@ module.exports = function (deployer) {
     const xfai = await XFai.deployed();
     await xFit.transfer(xfai.address, "100000000000000000000000");
     await xfai.add(
-      100,
       "0x64012fdcB2BC4aeB8072b54579742A5c81B24De7", // Pair address
       "0xcb346131339cc001a56d8178e28ec2a15254cd31", // Input Token
       xPriceOracle.address,

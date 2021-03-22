@@ -148,15 +148,15 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         address _xPoolOracle,
         uint256 _amount,
         uint256 _minPoolTokens
-    ) internal nonReentrant returns (uint256) {
+    ) internal nonReentrant returns (uint256, uint256) {
         uint256 toInvest = _pullTokens(_FromTokenContractAddress, _amount);
         uint256 LPBought;
-
+        uint256 fundingRaised;
         (address _ToUniswapToken0, address _ToUniswapToken1) =
             _getPairTokens(_pairAddress);
 
         if (_FromTokenContractAddress == _ToUniswapToken0) {
-            LPBought = _poolLiquidityInternal(
+            (LPBought, fundingRaised) = _poolLiquidityInternal(
                 _FromTokenContractAddress,
                 _ToUniswapToken1,
                 _pairAddress,
@@ -164,7 +164,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
                 toInvest
             );
         } else {
-            LPBought = _poolLiquidityInternal(
+            (LPBought, fundingRaised) = _poolLiquidityInternal(
                 _FromTokenContractAddress,
                 _ToUniswapToken0,
                 _pairAddress,
@@ -178,7 +178,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         // Update the price oracle cumulative prices for the pair
         IXPriceOracle(_xPoolOracle).update();
 
-        return LPBought;
+        return (LPBought, fundingRaised);
     }
 
     function _getPairTokens(address _pairAddress)
@@ -224,7 +224,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         address _pairAddress,
         address _xPoolOracle,
         uint256 _amount
-    ) internal returns (uint256) {
+    ) internal returns (uint256, uint256) {
         TokenSwapVars memory tokenSwapVars;
 
         tokenSwapVars.amountToSwap = _amount.div(2);
@@ -295,7 +295,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
             amountB
         );
 
-        return lpAmount;
+        return (lpAmount, tokenSwapVars.amountToSwap.sub(splittedFunds));
     }
 
     function swapSplittedFunds(

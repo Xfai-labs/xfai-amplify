@@ -62,6 +62,9 @@ contract XFai is XPoolHandler, Pausable {
     uint256 public bonusEndBlock;
     // XFIT tokens distributed per block.
     uint256 public XFITPerBlock;
+
+    uint256 totalLiquidity;
+
     // Bonus muliplier for early XFIT farmers.
     uint256 public constant BONUS_MULTIPLIER = 2;
 
@@ -115,7 +118,6 @@ contract XFai is XPoolHandler, Pausable {
     // Add a new lp to the pool. Can only be called by the owner.
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
     function add(
-        uint256 _allocPoint,
         IERC20 _lpToken,
         IERC20 _inputToken,
         IXPriceOracle _xPoolOracle,
@@ -126,13 +128,12 @@ contract XFai is XPoolHandler, Pausable {
         }
         uint256 lastRewardBlock =
             block.number > startBlock ? block.number : startBlock;
-        totalAllocPoint = totalAllocPoint.add(_allocPoint);
         poolInfo.push(
             PoolInfo({
                 lpToken: _lpToken,
                 inputToken: _inputToken,
                 xPoolOracle: _xPoolOracle,
-                allocPoint: _allocPoint,
+                allocPoint: 0,
                 lastRewardBlock: lastRewardBlock,
                 accXFITPerShare: 0
             })
@@ -215,6 +216,9 @@ contract XFai is XPoolHandler, Pausable {
             pool.lastRewardBlock = block.number;
             return;
         }
+        if (totalLiquidity > 0) {
+            set(_pid, lpSupply.mul(1e6).div(totalLiquidity), false);
+        }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 XFITReward =
             multiplier.mul(XFITPerBlock).mul(pool.allocPoint).div(
@@ -233,8 +237,9 @@ contract XFai is XPoolHandler, Pausable {
         uint256 _minPoolTokens
     ) public payable whenNotPaused {
         PoolInfo storage pool = poolInfo[_pid];
+        updatePool(_pid);
 
-        uint256 lpTokensBought =
+        (uint256 lpTokensBought, uint256 fundingRaised) =
             poolLiquidity(
                 address(pool.inputToken),
                 address(pool.lpToken),
@@ -242,15 +247,19 @@ contract XFai is XPoolHandler, Pausable {
                 _amount,
                 _minPoolTokens
             );
+        // Continous funding to devAddress
+        pool.inputToken.safeTransfer(devaddr, fundingRaised);
         _depositInternal(_pid, lpTokensBought, false);
     }
 
     // Deposit LP tokens to Amplify for XFIT allocation.
     function depositLP(uint256 _pid, uint256 _amount) public whenNotPaused {
+        updatePool(_pid);
         _depositInternal(_pid, _amount, true);
     }
 
     function withdrawLPWithToken(uint256 _pid, uint256 _amount) public {
+        updatePool(_pid);
         uint256 actualWithdrawAmount = _withdrawInternal(_pid, _amount, false);
         PoolInfo storage pool = poolInfo[_pid];
         redeemLPTokens(address(pool.lpToken), actualWithdrawAmount);
@@ -258,6 +267,7 @@ contract XFai is XPoolHandler, Pausable {
 
     // Withdraw LP tokens from Amplify.
     function withdrawLP(uint256 _pid, uint256 _amount) public whenNotPaused {
+        updatePool(_pid);
         _withdrawInternal(_pid, _amount, true);
     }
 
@@ -272,7 +282,6 @@ contract XFai is XPoolHandler, Pausable {
             userAddresses.push(msg.sender);
             user.enrolled = true;
         }
-        updatePool(_pid);
         if (user.amount > 0) {
             uint256 pending =
                 user.amount.mul(pool.accXFITPerShare).div(1e12).sub(
@@ -292,6 +301,7 @@ contract XFai is XPoolHandler, Pausable {
             }
             user.amount = user.amount.add(_amount);
         }
+        totalLiquidity = totalLiquidity.add(_amount);
         user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
     }
@@ -308,7 +318,6 @@ contract XFai is XPoolHandler, Pausable {
             "Withdraw: Can only withdraw after 10 blocks"
         );
         require(user.amount >= _amount, "withdraw: not good");
-        updatePool(_pid);
         uint256 pending =
             user.amount.mul(pool.accXFITPerShare).div(1e12).sub(
                 user.rewardDebt
@@ -330,6 +339,7 @@ contract XFai is XPoolHandler, Pausable {
             pool.lpToken.safeTransfer(devaddr, exitFee);
             withdrawableAmount = _amount.sub(exitFee);
         }
+        totalLiquidity = totalLiquidity.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
         return withdrawableAmount;
