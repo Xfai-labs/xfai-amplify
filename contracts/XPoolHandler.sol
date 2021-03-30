@@ -12,6 +12,7 @@ import "./interfaces/IUniswapV2Pair.sol";
 import "./interfaces/IUniswapV2Factory.sol";
 
 import "./lib/Babylonian.sol";
+import "hardhat/console.sol";
 
 interface IXPriceOracle {
     function update() external;
@@ -245,6 +246,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
 
         // If XFit are available in the contract, swap internally
         if (
+            tokenSwapVars.destTokenReserve > xFitThreeshold &&
             tokenSwapVars.destTokensAmount <
             (tokenSwapVars.destTokenReserve.sub(xFitThreeshold))
         ) {

@@ -70,8 +70,6 @@ contract XFai is XPoolHandler, Pausable {
 
     uint256 public constant REWARD_FACTOR = 10;
 
-    // Exit fee in percentage, scaled by e18. e.g. if exit fee is 2%, then exitFeeFactor should be 2e18
-    uint256 public exitFeeFactor;
     // Info of each pool.
     PoolInfo[] public poolInfo;
     // Info of each user that stakes LP tokens.
@@ -93,7 +91,6 @@ contract XFai is XPoolHandler, Pausable {
         Ixfit _XFIT,
         address _devaddr,
         uint256 _XFITPerBlock,
-        uint256 _exitFeeFactor,
         uint256 _startBlock,
         uint256 _bonusEndBlock,
         uint256 _xFitThreeshold,
@@ -104,7 +101,6 @@ contract XFai is XPoolHandler, Pausable {
         XFITPerBlock = _XFITPerBlock;
         bonusEndBlock = _bonusEndBlock;
         startBlock = _startBlock;
-        exitFeeFactor = _exitFeeFactor;
     }
 
     function poolLength() external view returns (uint256) {
@@ -325,24 +321,16 @@ contract XFai is XPoolHandler, Pausable {
         if (pending > 0) {
             safeXFITTransfer(msg.sender, pending);
         }
-        uint256 withdrawableAmount = _amount;
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
-            uint256 exitFee = _amount.mul(exitFeeFactor).div(100).div(1e18);
-
             if (withLPTokens == true) {
-                pool.lpToken.safeTransfer(
-                    address(msg.sender),
-                    _amount.sub(exitFee)
-                );
+                pool.lpToken.safeTransfer(address(msg.sender), _amount);
             }
-            pool.lpToken.safeTransfer(devaddr, exitFee);
-            withdrawableAmount = _amount.sub(exitFee);
         }
         totalLiquidity = totalLiquidity.sub(_amount);
         user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
-        return withdrawableAmount;
+        return _amount;
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
@@ -392,10 +380,6 @@ contract XFai is XPoolHandler, Pausable {
     function setXFITRewardPerBlock(uint256 _newReward) public onlyOwner {
         massUpdatePools();
         XFITPerBlock = _newReward;
-    }
-
-    function setExitFeeFactor(uint256 _newExitFeeFactor) public onlyOwner {
-        exitFeeFactor = _newExitFeeFactor;
     }
 
     function withdrawAdminXFIT(uint256 amount) public onlyOwner {

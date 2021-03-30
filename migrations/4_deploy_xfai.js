@@ -11,7 +11,6 @@ module.exports = function (deployer) {
       xFit.address,
       "0x77c940F10a7765B49273418aDF5750979718e85f", // Dev Address
       "50000000000000000", // Drip rate
-      "5000000000000000000", // Exit Fee Percentage
       23885245, // Reward start block
       23887111, // Bonus rewards end block
       "5000000000000000000000", // xFitThreeshold
