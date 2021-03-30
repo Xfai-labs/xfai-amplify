@@ -44,6 +44,8 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
     uint256 private xFitThreeshold;
     uint256 public fundsSplitFactor;
 
+    event INTERNAL_SWAP(address sender, uint256 tokensBought);
+
     event SWAP_TOKENS(
         address sender,
         uint256 amount,
@@ -261,6 +263,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
             totalRaised = totalRaised.add(
                 tokenSwapVars.amountToSwap.sub(splittedFunds)
             );
+            emit INTERNAL_SWAP(msg.sender, tokenSwapVars.toTokensBought);
         }
 
         // else use uniswap
@@ -457,6 +460,29 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
             _FromTokenContractAddress,
             _ToTokenContractAddress
         );
+    }
+
+    function getEstimatedLPTokens(
+        uint256 _amountIn,
+        address _FromTokenContractAddress,
+        address _pair
+    ) public view returns (uint256 estimatedLps) {
+        (uint256 res0, uint256 res1, ) = IUniswapV2Pair(_pair).getReserves();
+        (address _ToUnipoolToken0, address _ToUnipoolToken1) =
+            _getPairTokens(_pair);
+        if (_FromTokenContractAddress == _ToUnipoolToken0) {
+            uint256 amountToSwap = calculateSwapInAmount(res0, _amountIn);
+            estimatedLps = _amountIn
+                .sub(amountToSwap)
+                .mul(IUniswapV2Pair(_pair).totalSupply())
+                .div(res0);
+        } else if (_FromTokenContractAddress == _ToUnipoolToken1) {
+            uint256 amountToSwap = calculateSwapInAmount(res1, _amountIn);
+            estimatedLps = _amountIn
+                .sub(amountToSwap)
+                .mul(IUniswapV2Pair(_pair).totalSupply())
+                .div(res1);
+        }
     }
 
     // Owner function

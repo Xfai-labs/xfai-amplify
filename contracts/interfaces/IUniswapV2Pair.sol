@@ -11,4 +11,6 @@ interface IUniswapV2Pair {
             uint112 _reserve1,
             uint32 _blockTimestampLast
         );
+
+    function totalSupply() external view returns (uint256);
 }

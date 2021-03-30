@@ -142,6 +142,14 @@ contract XFai is XPoolHandler, Pausable {
         uint256 _allocPoint,
         bool _withUpdate
     ) public onlyOwner {
+        _setInternal(_pid, _allocPoint, _withUpdate);
+    }
+
+    function _setInternal(
+        uint256 _pid,
+        uint256 _allocPoint,
+        bool _withUpdate
+    ) internal {
         if (_withUpdate) {
             massUpdatePools();
         }
@@ -213,7 +221,7 @@ contract XFai is XPoolHandler, Pausable {
             return;
         }
         if (totalLiquidity > 0) {
-            set(_pid, lpSupply.mul(1e6).div(totalLiquidity), false);
+            _setInternal(_pid, lpSupply.mul(1e6).div(totalLiquidity), false);
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 XFITReward =
