@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
 import "./interfaces/Ixfit.sol";
+import "./interfaces/IErc20WithDecimals.sol";
 import "../contracts/XPoolHandler.sol";
 
 // Amplify is XFIT distibutor.
@@ -305,7 +306,11 @@ contract XFai is XPoolHandler, Pausable {
             }
             user.amount = user.amount.add(_amount);
         }
-        totalLiquidity = totalLiquidity.add(_amount);
+        uint256 normalizedAmount = _amount;
+        if (IErc20WithDecimals(address(pool.inputToken)).decimals() == 6) {
+            normalizedAmount = _amount.mul(1e6);
+        }
+        totalLiquidity = totalLiquidity.add(normalizedAmount);
         user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
     }
@@ -335,7 +340,11 @@ contract XFai is XPoolHandler, Pausable {
                 pool.lpToken.safeTransfer(address(msg.sender), _amount);
             }
         }
-        totalLiquidity = totalLiquidity.sub(_amount);
+        uint256 normalizedAmount = _amount;
+        if (IErc20WithDecimals(address(pool.inputToken)).decimals() == 6) {
+            normalizedAmount = _amount.mul(1e6);
+        }
+        totalLiquidity = totalLiquidity.sub(normalizedAmount);
         user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
         return _amount;

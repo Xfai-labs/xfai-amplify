@@ -4,7 +4,7 @@ const XPriceOracle = artifacts.require("XPriceOracle");
 
 module.exports = function (deployer) {
   deployer.then(async () => {
-    const xFit = await Xfit.deployed();
+    const xFit = await Xfit.at("0xc5e427321f9fe11bd2990127bfde89da666eb31b");
     const xPriceOracle = await XPriceOracle.deployed();
     await deployer.deploy(
       XFai,
