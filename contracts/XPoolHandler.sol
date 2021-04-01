@@ -12,7 +12,6 @@ import "./interfaces/IUniswapV2Pair.sol";
 import "./interfaces/IUniswapV2Factory.sol";
 
 import "./lib/Babylonian.sol";
-import "hardhat/console.sol";
 
 interface IXPriceOracle {
     function update() external;
@@ -41,7 +40,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         0xf000000000000000000000000000000000000000000000000000000000000000;
 
     uint256 public totalRaised;
-    uint256 private xFitThreeshold;
+    uint256 public xFitThreeshold;
     uint256 public fundsSplitFactor;
 
     event INTERNAL_SWAP(address sender, uint256 tokensBought);
@@ -218,6 +217,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         uint256 fromTokensBought;
         uint256 toTokensBought;
         uint256 destTokenReserve;
+        uint256 fundingRaised;
     }
 
     // This checks if its possible to swap Incoming tokens for XFit from the contract. If its not possible, then uses Uniswap to swap the tokens.
@@ -260,17 +260,14 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
                 _ToTokenContractAddress,
                 splittedFunds
             );
-            totalRaised = totalRaised.add(
-                tokenSwapVars.amountToSwap.sub(splittedFunds)
+            tokenSwapVars.fundingRaised = tokenSwapVars.amountToSwap.sub(
+                splittedFunds
             );
+            totalRaised = totalRaised.add(tokenSwapVars.fundingRaised);
             emit INTERNAL_SWAP(msg.sender, tokenSwapVars.toTokensBought);
         }
-
         // else use uniswap
-        if (
-            tokenSwapVars.destTokensAmount >=
-            (tokenSwapVars.destTokenReserve.sub(xFitThreeshold))
-        ) {
+        else {
             // divide intermediate into appropriate amount to add liquidity using single side liquidity provision logic descrobed here: https://blog.alphafinance.io/onesideduniswap/
             (
                 tokenSwapVars.fromTokensBought,
@@ -300,7 +297,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
             amountB
         );
 
-        return (lpAmount, tokenSwapVars.amountToSwap.sub(splittedFunds));
+        return (lpAmount, tokenSwapVars.fundingRaised);
     }
 
     function swapSplittedFunds(
@@ -395,12 +392,12 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
             uint256 amountToSwap = calculateSwapInAmount(res1, _amount);
             //if no reserve or a new _pair is created
             if (amountToSwap <= 0) amountToSwap = _amount.div(2);
-            fromTokensBought = _swapTokensInternal(
+            toTokensBought = _swapTokensInternal(
                 _fromContractAddress,
                 _ToUnipoolToken0,
                 amountToSwap
             );
-            toTokensBought = _amount.sub(amountToSwap);
+            fromTokensBought = _amount.sub(amountToSwap);
         }
     }
 

@@ -29,7 +29,7 @@ module.exports = {
       },
       {
         version: "0.6.2",
-      }
+      },
     ],
   },
   networks: {
@@ -38,6 +38,7 @@ module.exports = {
         url: `https://eth-kovan.alchemyapi.io/v2/QRPubkmfXoGs0VlYyJe4QvFJK6-fW5H_`,
         blockNumber: 24091820,
       },
+      allowUnlimitedContractSize: true,
     },
     kovan: {
       url: `https://eth-kovan.alchemyapi.io/v2/QRPubkmfXoGs0VlYyJe4QvFJK6-fW5H_`,

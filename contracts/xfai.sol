@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/utils/EnumerableSet.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Pausable.sol";
-import "./interfaces/Ixfit.sol";
 import "./interfaces/IErc20WithDecimals.sol";
 import "../contracts/XPoolHandler.sol";
 
@@ -55,7 +54,7 @@ contract XFai is XPoolHandler, Pausable {
     }
 
     // The XFIT TOKEN!
-    Ixfit public XFIT;
+    IERC20 public XFIT;
 
     // Dev address.
     address public devaddr;
@@ -89,7 +88,7 @@ contract XFai is XPoolHandler, Pausable {
     );
 
     constructor(
-        Ixfit _XFIT,
+        IERC20 _XFIT,
         address _devaddr,
         uint256 _XFITPerBlock,
         uint256 _startBlock,
