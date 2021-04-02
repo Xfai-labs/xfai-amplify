@@ -6,7 +6,9 @@ module.exports = function (deployer) {
     const dai = await deployer.deploy(
       DAI,
       Web3.utils.toBN("100000000000000000000000"),
-      18
+      18,
+      "DAI",
+      "DAI"
     );
   });
 };

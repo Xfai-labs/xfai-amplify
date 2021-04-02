@@ -5,10 +5,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 // StackToken with Governance.
 contract MockErc20 is ERC20, Ownable {
-    constructor(uint256 initialSupply, uint8 _decimals)
-        public
-        ERC20("USDTether", "USDT")
-    {
+    constructor(
+        uint256 initialSupply,
+        uint8 _decimals,
+        string memory _name,
+        string memory _symbol
+    ) public ERC20(_name, _symbol) {
         _setupDecimals(_decimals);
         _mint(msg.sender, initialSupply);
     }
