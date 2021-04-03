@@ -63,7 +63,7 @@ contract XFai is XPoolHandler, Pausable {
     // XFIT tokens distributed per block.
     uint256 public XFITPerBlock;
 
-    uint256 totalLiquidity;
+    uint256 public totalLiquidity;
 
     // Bonus muliplier for early XFIT farmers.
     uint256 public constant BONUS_MULTIPLIER = 2;
@@ -159,6 +159,16 @@ contract XFai is XPoolHandler, Pausable {
         poolInfo[_pid].allocPoint = _allocPoint;
     }
 
+    function _getNormalisedLiquidity(IERC20 _inputToken, uint256 _lpAmount)
+        internal
+        returns (uint256 normalizedAmount)
+    {
+        normalizedAmount = _lpAmount;
+        if (IErc20WithDecimals(address(_inputToken)).decimals() == 6) {
+            normalizedAmount = _lpAmount.mul(1e6);
+        }
+    }
+
     // Return reward multiplier over the given _from to _to block.
     function getMultiplier(uint256 _from, uint256 _to)
         public
@@ -221,7 +231,13 @@ contract XFai is XPoolHandler, Pausable {
             return;
         }
         if (totalLiquidity > 0) {
-            _setInternal(_pid, lpSupply.mul(1e6).div(totalLiquidity), false);
+            _setInternal(
+                _pid,
+                _getNormalisedLiquidity(pool.inputToken, lpSupply).mul(1e6).div(
+                    totalLiquidity
+                ),
+                false
+            );
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
         uint256 XFITReward =
@@ -305,11 +321,9 @@ contract XFai is XPoolHandler, Pausable {
             }
             user.amount = user.amount.add(_amount);
         }
-        uint256 normalizedAmount = _amount;
-        if (IErc20WithDecimals(address(pool.inputToken)).decimals() == 6) {
-            normalizedAmount = _amount.mul(1e6);
-        }
-        totalLiquidity = totalLiquidity.add(normalizedAmount);
+        totalLiquidity = totalLiquidity.add(
+            _getNormalisedLiquidity(pool.inputToken, _amount)
+        );
         user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e12);
         emit Deposit(msg.sender, _pid, _amount);
     }
@@ -339,11 +353,9 @@ contract XFai is XPoolHandler, Pausable {
                 pool.lpToken.safeTransfer(address(msg.sender), _amount);
             }
         }
-        uint256 normalizedAmount = _amount;
-        if (IErc20WithDecimals(address(pool.inputToken)).decimals() == 6) {
-            normalizedAmount = _amount.mul(1e6);
-        }
-        totalLiquidity = totalLiquidity.sub(normalizedAmount);
+        totalLiquidity = totalLiquidity.sub(
+            _getNormalisedLiquidity(pool.inputToken, _amount)
+        );
         user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
         return _amount;
