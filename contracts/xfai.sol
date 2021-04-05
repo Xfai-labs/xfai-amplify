@@ -50,7 +50,7 @@ contract XFai is XPoolHandler, Pausable {
         IXPriceOracle xPoolOracle;
         uint256 allocPoint; // How many allocation points assigned to this pool. XFITs to distribute per block.
         uint256 lastRewardBlock; // Last block number that XFITs distribution occurs.
-        uint256 accXFITPerShare; // Accumulated XFITs per share, times 1e12. See below.
+        uint256 accXFITPerShare; // Accumulated XFITs per share, times 1e18. See below.
     }
 
     // The XFIT TOKEN!
@@ -161,6 +161,7 @@ contract XFai is XPoolHandler, Pausable {
 
     function _getNormalisedLiquidity(IERC20 _inputToken, uint256 _lpAmount)
         internal
+        view
         returns (uint256 normalizedAmount)
     {
         normalizedAmount = _lpAmount;
@@ -205,10 +206,10 @@ contract XFai is XPoolHandler, Pausable {
                     totalAllocPoint
                 );
             accXFITPerShare = accXFITPerShare.add(
-                XFITReward.mul(1e12).div(lpSupply)
+                XFITReward.mul(1e18).div(lpSupply)
             );
         }
-        return user.amount.mul(accXFITPerShare).div(1e12).sub(user.rewardDebt);
+        return user.amount.mul(accXFITPerShare).div(1e18).sub(user.rewardDebt);
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
@@ -216,6 +217,28 @@ contract XFai is XPoolHandler, Pausable {
         uint256 length = poolInfo.length;
         for (uint256 pid = 0; pid < length; ++pid) {
             updatePool(pid);
+        }
+    }
+
+    function massUpdateAllocationPoints() public {
+        uint256 length = poolInfo.length;
+        for (uint256 pid = 0; pid < length; ++pid) {
+            PoolInfo storage pool = poolInfo[pid];
+            uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+            if (lpSupply == 0) {
+                return;
+            }
+            if (totalLiquidity == 0) {
+                _setInternal(pid, 0, false);
+            } else {
+                _setInternal(
+                    pid,
+                    _getNormalisedLiquidity(pool.inputToken, lpSupply)
+                        .mul(1e18)
+                        .div(totalLiquidity),
+                    false
+                );
+            }
         }
     }
 
@@ -233,9 +256,9 @@ contract XFai is XPoolHandler, Pausable {
         if (totalLiquidity > 0) {
             _setInternal(
                 _pid,
-                _getNormalisedLiquidity(pool.inputToken, lpSupply).mul(1e6).div(
-                    totalLiquidity
-                ),
+                _getNormalisedLiquidity(pool.inputToken, lpSupply)
+                    .mul(1e18)
+                    .div(totalLiquidity),
                 false
             );
         }
@@ -246,7 +269,7 @@ contract XFai is XPoolHandler, Pausable {
             );
         XFIT.transfer(devaddr, XFITReward.div(REWARD_FACTOR));
         pool.accXFITPerShare = pool.accXFITPerShare.add(
-            XFITReward.mul(1e12).div(lpSupply)
+            XFITReward.mul(1e18).div(lpSupply)
         );
         pool.lastRewardBlock = block.number;
     }
@@ -256,9 +279,8 @@ contract XFai is XPoolHandler, Pausable {
         uint256 _amount,
         uint256 _minPoolTokens
     ) public payable whenNotPaused {
+        massUpdatePools();
         PoolInfo storage pool = poolInfo[_pid];
-        updatePool(_pid);
-
         (uint256 lpTokensBought, uint256 fundingRaised) =
             poolLiquidity(
                 address(pool.inputToken),
@@ -274,12 +296,12 @@ contract XFai is XPoolHandler, Pausable {
 
     // Deposit LP tokens to Amplify for XFIT allocation.
     function depositLP(uint256 _pid, uint256 _amount) public whenNotPaused {
-        updatePool(_pid);
+        massUpdatePools();
         _depositInternal(_pid, _amount, true);
     }
 
     function withdrawLPWithToken(uint256 _pid, uint256 _amount) public {
-        updatePool(_pid);
+        massUpdatePools();
         uint256 actualWithdrawAmount = _withdrawInternal(_pid, _amount, false);
         PoolInfo storage pool = poolInfo[_pid];
         redeemLPTokens(address(pool.lpToken), actualWithdrawAmount);
@@ -287,7 +309,7 @@ contract XFai is XPoolHandler, Pausable {
 
     // Withdraw LP tokens from Amplify.
     function withdrawLP(uint256 _pid, uint256 _amount) public whenNotPaused {
-        updatePool(_pid);
+        massUpdatePools();
         _withdrawInternal(_pid, _amount, true);
     }
 
@@ -304,7 +326,7 @@ contract XFai is XPoolHandler, Pausable {
         }
         if (user.amount > 0) {
             uint256 pending =
-                user.amount.mul(pool.accXFITPerShare).div(1e12).sub(
+                user.amount.mul(pool.accXFITPerShare).div(1e18).sub(
                     user.rewardDebt
                 );
             if (pending > 0) {
@@ -324,7 +346,8 @@ contract XFai is XPoolHandler, Pausable {
         totalLiquidity = totalLiquidity.add(
             _getNormalisedLiquidity(pool.inputToken, _amount)
         );
-        user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e12);
+        massUpdateAllocationPoints();
+        user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e18);
         emit Deposit(msg.sender, _pid, _amount);
     }
 
@@ -333,6 +356,7 @@ contract XFai is XPoolHandler, Pausable {
         uint256 _amount,
         bool withLPTokens
     ) internal returns (uint256) {
+        massUpdatePools();
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(
@@ -341,7 +365,7 @@ contract XFai is XPoolHandler, Pausable {
         );
         require(user.amount >= _amount, "withdraw: not good");
         uint256 pending =
-            user.amount.mul(pool.accXFITPerShare).div(1e12).sub(
+            user.amount.mul(pool.accXFITPerShare).div(1e18).sub(
                 user.rewardDebt
             );
         if (pending > 0) {
@@ -356,7 +380,8 @@ contract XFai is XPoolHandler, Pausable {
         totalLiquidity = totalLiquidity.sub(
             _getNormalisedLiquidity(pool.inputToken, _amount)
         );
-        user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e12);
+        massUpdateAllocationPoints();
+        user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e18);
         emit Withdraw(msg.sender, _pid, _amount);
         return _amount;
     }

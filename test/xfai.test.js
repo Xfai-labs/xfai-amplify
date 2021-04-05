@@ -11,10 +11,16 @@ const XFai = artifacts.require("XFai");
 const XPriceOracle = artifacts.require("XPriceOracle");
 const treasury = "0x0EC23E0d5Db74275Aa6B2A7bECec970A3636Db20";
 const USDT_XFIT_PAIR = "0x64012fdcB2BC4aeB8072b54579742A5c81B24De7";
+const DAI_XFIT_PAIR = "0xd60620461e1A8652d2746f173789947293c8e6C3";
 
 const usdtXFitPairContract = new web3.eth.Contract(
   require("./abis/UniswapV2Pair.abi.json"),
   USDT_XFIT_PAIR
+);
+
+const daiXFitPairContract = new web3.eth.Contract(
+  require("./abis/UniswapV2Pair.abi.json"),
+  DAI_XFIT_PAIR
 );
 
 async function impersonateAccount(account) {
@@ -45,7 +51,8 @@ describe("XFai Scenario", function () {
   let xfai;
   let xfit;
   let usdt;
-  let xPriceOracle;
+  let xPriceOracleUSDT;
+  let xPriceOracleDAI;
   before(async () => {
     [admin, dev, ...users] = await web3.eth.getAccounts();
     await impersonateAccount(treasury);
@@ -59,21 +66,36 @@ describe("XFai Scenario", function () {
       xfit.address,
       dev, // Dev Address
       "100", // Drip rate
-      24049846, // Reward start block
-      24049850, // Bonus rewards end block
+      24163844, // Reward start block
+      24163848, // Bonus rewards end block
       "5000000000000000000000", // xFitThreeshold
       "500000000000000000", //FundsSplitFactor);
       { from: admin }
     );
+
+    // Add USDT pool
     usdt = await XFit.at("0xcb346131339cc001a56d8178e28ec2a15254cd31");
-    xPriceOracle = await XPriceOracle.new(
+    xPriceOracleUSDT = await XPriceOracle.new(
       USDT_XFIT_PAIR // Pair address
     );
-    await xPriceOracle.update();
+    await xPriceOracleUSDT.update();
     await xfai.add(
       USDT_XFIT_PAIR, // Pair address
       usdt.address, // Input Token
-      xPriceOracle.address,
+      xPriceOracleUSDT.address,
+      true
+    );
+
+    // Add DAI pool
+    dai = await XFit.at("0x8b5DEB679F3242aEf2A43F199d539dF0Ba360625");
+    xPriceOracleDAI = await XPriceOracle.new(
+      DAI_XFIT_PAIR // Pair address
+    );
+    await xPriceOracleDAI.update();
+    await xfai.add(
+      DAI_XFIT_PAIR, // Pair address
+      dai.address, // Input Token
+      xPriceOracleDAI.address,
       true
     );
 
@@ -85,6 +107,11 @@ describe("XFai Scenario", function () {
     await usdt.transfer(users[0], "10000000000", { from: treasury });
     await usdt.transfer(users[1], "100000000", { from: treasury });
     await usdt.transfer(users[2], "100000000", { from: treasury });
+
+    // Distribute DAI to users
+    await dai.transfer(users[0], "1000000000000000000000", { from: treasury });
+    await dai.transfer(users[1], "10000000000000000000", { from: treasury });
+    await dai.transfer(users[2], "10000000000000000000", { from: treasury });
   });
 
   describe("Initial Setup", async () => {
@@ -117,7 +144,10 @@ describe("XFai Scenario", function () {
     describe("When Contract has enough XFit", async () => {
       it("Uses Internal Reserves to Swap input token instead of Uniswap", async () => {
         await impersonateAccount(users[0]);
-        const expectedXFit = await xPriceOracle.consult(usdt.address, "500");
+        const expectedXFit = await xPriceOracleUSDT.consult(
+          usdt.address,
+          "500"
+        );
         const fundsSplitFactor = await xfai.fundsSplitFactor();
         const continousFunding = new BN("500")
           .mul(fundsSplitFactor)
@@ -147,7 +177,10 @@ describe("XFai Scenario", function () {
 
       it("Behaves correctly when multiple users interact with the contract", async () => {
         await impersonateAccount(users[0]);
-        const expectedXFit = await xPriceOracle.consult(usdt.address, "500");
+        const expectedXFit = await xPriceOracleUSDT.consult(
+          usdt.address,
+          "500"
+        );
         await usdt.approve(xfai.address, "1000", { from: users[0] });
         const receipt = await xfai.depositLPWithToken(0, "1000", 1, {
           from: users[0],
@@ -158,7 +191,10 @@ describe("XFai Scenario", function () {
         });
 
         await impersonateAccount(users[1]);
-        const expectedXFit2 = await xPriceOracle.consult(usdt.address, "1000");
+        const expectedXFit2 = await xPriceOracleUSDT.consult(
+          usdt.address,
+          "1000"
+        );
         await usdt.approve(xfai.address, "2000", { from: users[1] });
         const receipt2 = await xfai.depositLPWithToken(0, "2000", 1, {
           from: users[1],
@@ -169,7 +205,10 @@ describe("XFai Scenario", function () {
         });
 
         await impersonateAccount(users[2]);
-        const expectedXFit3 = await xPriceOracle.consult(usdt.address, "1000");
+        const expectedXFit3 = await xPriceOracleUSDT.consult(
+          usdt.address,
+          "1000"
+        );
         await usdt.approve(xfai.address, "2000", { from: users[2] });
         const receipt3 = await xfai.depositLPWithToken(0, "2000", 1, {
           from: users[2],
@@ -268,7 +307,6 @@ describe("XFai Scenario", function () {
 
         const accumulatedRewards = await xfai.pendingXFIT(0, users[0]);
         expect(accumulatedRewards.toString()).equals("0");
-        
       });
     });
     describe("when contract does not have XFit equal to xFitThreeshold", async () => {
@@ -317,6 +355,101 @@ describe("XFai Scenario", function () {
           fromToken: usdt.address,
           toToken: xfit.address,
         });
+      });
+    });
+    describe("Dynamic Allocation Point", () => {
+      it("In case of multiple pools, handles dynamic allocation points correctly", async () => {
+        // start with clean slate
+        const userInfo0 = await xfai.userInfo(0, users[0]);
+        const userInfo1 = await xfai.userInfo(0, users[1]);
+        const userInfo2 = await xfai.userInfo(0, users[2]);
+        await impersonateAccount(users[0]);
+        await xfai.withdrawLPWithToken(0, userInfo0.amount.toString(), {
+          from: users[0],
+        });
+
+        await impersonateAccount(users[1]);
+        await xfai.withdrawLPWithToken(0, userInfo1.amount.toString(), {
+          from: users[1],
+        });
+
+        await impersonateAccount(users[2]);
+        await xfai.withdrawLPWithToken(0, userInfo2.amount.toString(), {
+          from: users[2],
+        });
+
+        await mineBlocks();
+
+        await impersonateAccount(users[0]);
+        await usdt.approve(xfai.address, "10000000", { from: users[0] });
+        const receipt = await xfai.depositLPWithToken(0, "10000000", 1, {
+          from: users[0],
+        });
+
+        await mineBlocks();
+        await mineBlocks();
+        // 100 + 100 = 200 total rewards
+
+        await impersonateAccount(users[1]);
+        await dai.approve(xfai.address, "10000000000000000000", {
+          from: users[1],
+        });
+        const receiptDai = await xfai.depositLPWithToken(
+          1,
+          "10000000000000000000",
+          1,
+          {
+            from: users[1],
+          }
+        );
+        // 200 + 100 + 100 = 400 total rewards
+        const poolInfo = [];
+        poolInfo[0] = await xfai.poolInfo(0);
+        poolInfo[1] = await xfai.poolInfo(1);
+        const totalAllocPoint = await xfai.totalAllocPoint();
+        const totalLiquidity = await xfai.totalLiquidity();
+        const usdtLiquidity = await usdtXFitPairContract.methods
+          .balanceOf(xfai.address)
+          .call();
+        const daiLiquidity = await daiXFitPairContract.methods
+          .balanceOf(xfai.address)
+          .call();
+
+        const usdtRewardsShare = new BN(usdtLiquidity)
+          .mul(new BN(1e6))
+          .mul(new BN("1000000000000000000")) // to since the result is less than zero
+          .div(totalLiquidity);
+
+        const daiRewardsShare = new BN(daiLiquidity)
+          .mul(new BN("1000000000000000000"))
+          .div(totalLiquidity);
+
+        await mineBlocks();
+        await mineBlocks();
+
+        const usdtRewardsForLast2Blocks = usdtRewardsShare
+          .mul(new BN(100)) // totalBlockReward
+          .mul(new BN(2))
+          .div(new BN("1000000000000000000"));
+
+        const daiRewardsForLast2Blocks = daiRewardsShare
+          .mul(new BN(100)) // totalBlockReward
+          .mul(new BN(2))
+          .div(new BN("1000000000000000000"))
+          .sub(new BN(1)); // Rounding error
+
+        const expectedUSDTReward = new BN(400).add(usdtRewardsForLast2Blocks);
+
+        const accumulatedUSDTRewards = await xfai.pendingXFIT(0, users[0]);
+
+        const accumulatedDAIRewards = await xfai.pendingXFIT(1, users[1]);
+
+        expect(expectedUSDTReward.toString()).to.be.equal(
+          accumulatedUSDTRewards.toString()
+        );
+        expect(accumulatedDAIRewards.toString()).to.be.equal(
+          daiRewardsForLast2Blocks.toString()
+        );
       });
     });
   });
