@@ -278,7 +278,7 @@ contract XFai is XPoolHandler, Pausable {
         uint256 _pid,
         uint256 _amount,
         uint256 _minPoolTokens
-    ) public payable whenNotPaused {
+    ) public whenNotPaused {
         massUpdatePools();
         PoolInfo storage pool = poolInfo[_pid];
         (uint256 lpTokensBought, uint256 fundingRaised) =

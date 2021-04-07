@@ -17,7 +17,7 @@ module.exports = function (deployer) {
       "500000000000000000" //FundsSplitFactor
     );
     const xfai = await XFai.deployed();
-    await xFit.transfer(xfai.address, "100000000000000000000000");
+    await xFit.transfer(xfai.address, "10000000000000000000000");
     await xfai.add(
       "0x64012fdcB2BC4aeB8072b54579742A5c81B24De7", // XFIT-USDT Pair address
       "0xcb346131339cc001a56d8178e28ec2a15254cd31", // USDT Token

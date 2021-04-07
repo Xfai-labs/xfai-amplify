@@ -91,18 +91,19 @@ module.exports = {
     solc: {
       version: "0.7.0", // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
-      // settings: {          // See the solidity docs for advice about optimization and evmVersion
-      //  optimizer: {
-      //    enabled: false,
-      //    runs: 200
-      //  },
-      //  evmVersion: "byzantium"
-      // }
+      settings: {
+        // See the solidity docs for advice about optimization and evmVersion
+        optimizer: {
+          enabled: true,
+          runs: 200,
+        },
+        //  evmVersion: "byzantium"
+        // }
+      },
     },
   },
-
   plugins: ["truffle-plugin-verify"],
   api_keys: {
-    etherscan: '6SZADERRW7JUGQ6QCK9Z15YDIB1FW1ZIX9'
-  }
+    etherscan: "6SZADERRW7JUGQ6QCK9Z15YDIB1FW1ZIX9",
+  },
 };

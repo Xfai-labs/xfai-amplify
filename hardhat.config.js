@@ -1,5 +1,6 @@
 require("@nomiclabs/hardhat-truffle5");
 require("@nomiclabs/hardhat-web3");
+require("hardhat-gas-reporter");
 
 const fs = require("fs");
 
@@ -54,4 +55,7 @@ module.exports = {
     // Obtain one at https://etherscan.io/
     apiKey: "6SZADERRW7JUGQ6QCK9Z15YDIB1FW1ZIX9",
   },
+  gasReporter: {
+    gasPrice: 150
+  }
 };
