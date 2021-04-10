@@ -245,6 +245,10 @@ describe("XFai Scenario", function () {
           .balanceOf(xfai.address)
           .call();
         // console.log(userStake.amount.div(new BN(2)).toString());
+        for (let i = 0; i < 10; i++) {
+          await mineBlocks();
+        }
+        // total rewards puto this point = 333.4
         await impersonateAccount(users[0]);
         await xfai.withdrawLP(0, userStake.amount.div(new BN(2)).toString(), {
           from: users[0],
@@ -253,7 +257,7 @@ describe("XFai Scenario", function () {
         const postLpBalance = await usdtXFitPairContract.methods
           .balanceOf(xfai.address)
           .call();
-        expect(postXFitBalance.sub(prevXFitBalance).toString()).equals("34");
+        expect(postXFitBalance.sub(prevXFitBalance).toString()).equals("367");
         expect((prevLpBalance - postLpBalance).toString()).equals(
           userStake.amount.div(new BN(2)).toString()
         );
@@ -363,6 +367,11 @@ describe("XFai Scenario", function () {
         const userInfo0 = await xfai.userInfo(0, users[0]);
         const userInfo1 = await xfai.userInfo(0, users[1]);
         const userInfo2 = await xfai.userInfo(0, users[2]);
+
+        for (let i = 0; i < 10; i++) {
+          await mineBlocks();
+        }
+        
         await impersonateAccount(users[0]);
         await xfai.withdrawLPWithToken(0, userInfo0.amount.toString(), {
           from: users[0],

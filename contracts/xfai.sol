@@ -54,12 +54,12 @@ contract XFai is XPoolHandler, Pausable {
     }
 
     // The XFIT TOKEN!
-    IERC20 public XFIT;
+    IERC20 public immutable XFIT;
 
     // Dev address.
     address public devaddr;
     // Block number when bonus XFIT period ends.
-    uint256 public bonusEndBlock;
+    uint256 public immutable bonusEndBlock;
     // XFIT tokens distributed per block.
     uint256 public XFITPerBlock;
 
@@ -77,7 +77,7 @@ contract XFai is XPoolHandler, Pausable {
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
     // The block number when XFIT mining starts.
-    uint256 public startBlock;
+    uint256 public immutable startBlock;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -134,15 +134,6 @@ contract XFai is XPoolHandler, Pausable {
                 accXFITPerShare: 0
             })
         );
-    }
-
-    // Update the given pool's XFIT allocation point. Can only be called by the owner.
-    function set(
-        uint256 _pid,
-        uint256 _allocPoint,
-        bool _withUpdate
-    ) public onlyOwner {
-        _setInternal(_pid, _allocPoint, _withUpdate);
     }
 
     function _setInternal(
@@ -290,7 +281,9 @@ contract XFai is XPoolHandler, Pausable {
                 _minPoolTokens
             );
         // Continous funding to devAddress
-        pool.inputToken.safeTransfer(devaddr, fundingRaised);
+        if (fundingRaised > 0) {
+            pool.inputToken.safeTransfer(devaddr, fundingRaised);
+        }
         _depositInternal(_pid, lpTokensBought, false);
     }
 
@@ -300,7 +293,10 @@ contract XFai is XPoolHandler, Pausable {
         _depositInternal(_pid, _amount, true);
     }
 
-    function withdrawLPWithToken(uint256 _pid, uint256 _amount) public {
+    function withdrawLPWithToken(uint256 _pid, uint256 _amount)
+        public
+        whenNotPaused
+    {
         massUpdatePools();
         uint256 actualWithdrawAmount = _withdrawInternal(_pid, _amount, false);
         PoolInfo storage pool = poolInfo[_pid];
@@ -320,7 +316,7 @@ contract XFai is XPoolHandler, Pausable {
     ) internal {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        if (user.enrolled == false) {
+        if (!user.enrolled) {
             userAddresses.push(msg.sender);
             user.enrolled = true;
         }
@@ -348,6 +344,7 @@ contract XFai is XPoolHandler, Pausable {
         );
         massUpdateAllocationPoints();
         user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e18);
+        user.lastDepositedBlock = block.number;
         emit Deposit(msg.sender, _pid, _amount);
     }
 
@@ -359,10 +356,6 @@ contract XFai is XPoolHandler, Pausable {
         massUpdatePools();
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        require(
-            block.number >= user.lastDepositedBlock.add(10),
-            "Withdraw: Can only withdraw after 10 blocks"
-        );
         require(user.amount >= _amount, "withdraw: not good");
         uint256 pending =
             user.amount.mul(pool.accXFITPerShare).div(1e18).sub(
@@ -372,6 +365,10 @@ contract XFai is XPoolHandler, Pausable {
             safeXFITTransfer(msg.sender, pending);
         }
         if (_amount > 0) {
+            require(
+                block.number >= user.lastDepositedBlock.add(10),
+                "Withdraw: Can only withdraw after 10 blocks"
+            );
             user.amount = user.amount.sub(_amount);
             if (withLPTokens == true) {
                 pool.lpToken.safeTransfer(address(msg.sender), _amount);
