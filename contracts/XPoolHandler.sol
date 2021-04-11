@@ -222,7 +222,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
     ) internal returns (uint256, uint256) {
         TokenSwapVars memory tokenSwapVars;
 
-        tokenSwapVars.amountToSwap = _amount.div(2);
+        tokenSwapVars.amountToSwap = _amount / 2;
 
         // Convert amountToSwap to equivalent number of XFit tokens by quering prie oracle
         tokenSwapVars.destTokensAmount = IXPriceOracle(_xPoolOracle).consult(
@@ -277,7 +277,8 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
                 _FromTokenContractAddress,
                 _ToTokenContractAddress,
                 tokenSwapVars.fromTokensBought,
-                tokenSwapVars.toTokensBought
+                tokenSwapVars.toTokensBought,
+                tokenSwapVars.fundingRaised > 0
             );
 
         emit POOL_LIQUIDITY(
@@ -308,7 +309,8 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         address _ToUnipoolToken0,
         address _ToUnipoolToken1,
         uint256 token0Bought,
-        uint256 token1Bought
+        uint256 token1Bought,
+        bool isInternalSwap
     )
         internal
         returns (
@@ -349,12 +351,16 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
             );
         }
 
-        //Returning Residue in token1, if any
-        if (token1Bought.sub(amountB) > 0) {
-            IERC20(_ToUnipoolToken1).safeTransfer(
-                msg.sender,
-                token1Bought.sub(amountB)
-            );
+        // Return Xfit residue if there is any only if Uniswap is used for swapping and not the internal reserves.
+        if (!isInternalSwap) {
+            //Returning Residue in token1, if any
+
+            if (token1Bought.sub(amountB) > 0) {
+                IERC20(_ToUnipoolToken1).safeTransfer(
+                    msg.sender,
+                    token1Bought.sub(amountB)
+                );
+            }
         }
 
         return (LP, amountA, amountB);

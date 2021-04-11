@@ -207,7 +207,7 @@ contract XFai is XPoolHandler, Pausable {
     function massUpdatePools() public {
         uint256 length = poolInfo.length;
         for (uint256 pid = 0; pid < length; ++pid) {
-            updatePool(pid);
+            _updatePool(pid);
         }
     }
 
@@ -231,38 +231,6 @@ contract XFai is XPoolHandler, Pausable {
                 );
             }
         }
-    }
-
-    // Update reward variables of the given pool to be up-to-date.
-    function updatePool(uint256 _pid) public {
-        PoolInfo storage pool = poolInfo[_pid];
-        if (block.number <= pool.lastRewardBlock) {
-            return;
-        }
-        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
-        if (lpSupply == 0) {
-            pool.lastRewardBlock = block.number;
-            return;
-        }
-        if (totalLiquidity > 0) {
-            _setInternal(
-                _pid,
-                _getNormalisedLiquidity(pool.inputToken, lpSupply)
-                    .mul(1e18)
-                    .div(totalLiquidity),
-                false
-            );
-        }
-        uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 XFITReward =
-            multiplier.mul(XFITPerBlock).mul(pool.allocPoint).div(
-                totalAllocPoint
-            );
-        XFIT.transfer(devaddr, XFITReward.div(REWARD_FACTOR));
-        pool.accXFITPerShare = pool.accXFITPerShare.add(
-            XFITReward.mul(1e18).div(lpSupply)
-        );
-        pool.lastRewardBlock = block.number;
     }
 
     function depositLPWithToken(
@@ -381,6 +349,38 @@ contract XFai is XPoolHandler, Pausable {
         user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e18);
         emit Withdraw(msg.sender, _pid, _amount);
         return _amount;
+    }
+
+    // Update reward variables of the given pool to be up-to-date.
+    function _updatePool(uint256 _pid) internal {
+        PoolInfo storage pool = poolInfo[_pid];
+        if (block.number <= pool.lastRewardBlock) {
+            return;
+        }
+        uint256 lpSupply = pool.lpToken.balanceOf(address(this));
+        if (lpSupply == 0) {
+            pool.lastRewardBlock = block.number;
+            return;
+        }
+        if (totalLiquidity > 0) {
+            _setInternal(
+                _pid,
+                _getNormalisedLiquidity(pool.inputToken, lpSupply)
+                    .mul(1e18)
+                    .div(totalLiquidity),
+                false
+            );
+        }
+        uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
+        uint256 XFITReward =
+            multiplier.mul(XFITPerBlock).mul(pool.allocPoint).div(
+                totalAllocPoint
+            );
+        XFIT.transfer(devaddr, XFITReward.div(REWARD_FACTOR));
+        pool.accXFITPerShare = pool.accXFITPerShare.add(
+            XFITReward.mul(1e18).div(lpSupply)
+        );
+        pool.lastRewardBlock = block.number;
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
