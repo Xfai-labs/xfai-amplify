@@ -3,12 +3,13 @@ pragma solidity ^0.7.0;
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/lib/contracts/libraries/FixedPoint.sol";
+import "./interfaces/IXPriceOracle.sol";
 
 import "./lib/UniswapV2OracleLibrary.sol";
 
 // fixed window oracle that recomputes the average price for the entire period once every period
 // note that the price average is only guaranteed to be over at least 1 period, but may be over a longer period
-contract XPriceOracle {
+contract XPriceOracle is IXPriceOracle {
     using FixedPoint for *;
 
     uint256 public constant PERIOD = 1 hours;
@@ -38,7 +39,7 @@ contract XPriceOracle {
         ); // ensure that there's liquidity in the pair
     }
 
-    function update() external {
+    function update() external override {
         (
             uint256 price0Cumulative,
             uint256 price1Cumulative,
@@ -68,6 +69,7 @@ contract XPriceOracle {
     function consult(address token, uint256 amountIn)
         external
         view
+        override
         returns (uint256 amountOut)
     {
         if (token == token0) {

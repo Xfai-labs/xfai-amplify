@@ -10,17 +10,8 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "./interfaces/IUniswapV2Router02.sol";
 import "./interfaces/IUniswapV2Pair.sol";
 import "./interfaces/IUniswapV2Factory.sol";
-
+import "./interfaces/IXPriceOracle.sol";
 import "./lib/Babylonian.sol";
-
-interface IXPriceOracle {
-    function update() external;
-
-    function consult(address token, uint256 amountIn)
-        external
-        view
-        returns (uint256);
-}
 
 contract XPoolHandler is ReentrancyGuard, Ownable {
     using SafeMath for uint256;
@@ -91,6 +82,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         address token0 = pair.token0();
         address token1 = pair.token1();
 
+        IERC20(_FromUniPoolAddress).safeApprove(address(uniswapRouter), 0);
         IERC20(_FromUniPoolAddress).safeApprove(
             address(uniswapRouter),
             _lpTokensAmount
@@ -230,7 +222,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
     ) internal returns (uint256, uint256) {
         TokenSwapVars memory tokenSwapVars;
 
-        tokenSwapVars.amountToSwap = _amount.div(2);
+        tokenSwapVars.amountToSwap = _amount / 2;
 
         // Convert amountToSwap to equivalent number of XFit tokens by quering prie oracle
         tokenSwapVars.destTokensAmount = IXPriceOracle(_xPoolOracle).consult(
@@ -285,7 +277,8 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
                 _FromTokenContractAddress,
                 _ToTokenContractAddress,
                 tokenSwapVars.fromTokensBought,
-                tokenSwapVars.toTokensBought
+                tokenSwapVars.toTokensBought,
+                tokenSwapVars.fundingRaised > 0
             );
 
         emit POOL_LIQUIDITY(
@@ -316,7 +309,8 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         address _ToUnipoolToken0,
         address _ToUnipoolToken1,
         uint256 token0Bought,
-        uint256 token1Bought
+        uint256 token1Bought,
+        bool isInternalSwap
     )
         internal
         returns (
@@ -357,12 +351,16 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
             );
         }
 
-        //Returning Residue in token1, if any
-        if (token1Bought.sub(amountB) > 0) {
-            IERC20(_ToUnipoolToken1).safeTransfer(
-                msg.sender,
-                token1Bought.sub(amountB)
-            );
+        // Return Xfit residue if there is any only if Uniswap is used for swapping and not the internal reserves.
+        if (!isInternalSwap) {
+            //Returning Residue in token1, if any
+
+            if (token1Bought.sub(amountB) > 0) {
+                IERC20(_ToUnipoolToken1).safeTransfer(
+                    msg.sender,
+                    token1Bought.sub(amountB)
+                );
+            }
         }
 
         return (LP, amountA, amountB);
@@ -381,7 +379,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         if (_fromContractAddress == _ToUnipoolToken0) {
             uint256 amountToSwap = calculateSwapInAmount(res0, _amount);
             //if no reserve or a new _pair is created
-            if (amountToSwap <= 0) amountToSwap = _amount.div(2);
+            if (amountToSwap == 0) amountToSwap = _amount.div(2);
             toTokensBought = _swapTokensInternal(
                 _fromContractAddress,
                 _ToUnipoolToken1,
@@ -391,7 +389,7 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
         } else {
             uint256 amountToSwap = calculateSwapInAmount(res1, _amount);
             //if no reserve or a new _pair is created
-            if (amountToSwap <= 0) amountToSwap = _amount.div(2);
+            if (amountToSwap == 0) amountToSwap = _amount.div(2);
             toTokensBought = _swapTokensInternal(
                 _fromContractAddress,
                 _ToUnipoolToken0,
@@ -484,11 +482,12 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
 
     // Owner function
 
-    function _setXFitThreeshold(uint256 _xFitThreeshold) public onlyOwner {
+    function setXFitThreeshold(uint256 _xFitThreeshold) public onlyOwner {
         xFitThreeshold = _xFitThreeshold;
     }
 
     function setFundsSplitFactor(uint256 _fundsSplitFactor) public onlyOwner {
+        require(_fundsSplitFactor <= 1e18, "Invalid fundsSplitFactor Value");
         fundsSplitFactor = _fundsSplitFactor;
     }
 }

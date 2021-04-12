@@ -54,12 +54,12 @@ contract XFai is XPoolHandler, Pausable {
     }
 
     // The XFIT TOKEN!
-    IERC20 public XFIT;
+    IERC20 public immutable XFIT;
 
     // Dev address.
     address public devaddr;
     // Block number when bonus XFIT period ends.
-    uint256 public bonusEndBlock;
+    uint256 public immutable bonusEndBlock;
     // XFIT tokens distributed per block.
     uint256 public XFITPerBlock;
 
@@ -77,7 +77,7 @@ contract XFai is XPoolHandler, Pausable {
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
     // The block number when XFIT mining starts.
-    uint256 public startBlock;
+    uint256 public immutable startBlock;
 
     event Deposit(address indexed user, uint256 indexed pid, uint256 amount);
     event Withdraw(address indexed user, uint256 indexed pid, uint256 amount);
@@ -134,15 +134,6 @@ contract XFai is XPoolHandler, Pausable {
                 accXFITPerShare: 0
             })
         );
-    }
-
-    // Update the given pool's XFIT allocation point. Can only be called by the owner.
-    function set(
-        uint256 _pid,
-        uint256 _allocPoint,
-        bool _withUpdate
-    ) public onlyOwner {
-        _setInternal(_pid, _allocPoint, _withUpdate);
     }
 
     function _setInternal(
@@ -216,7 +207,7 @@ contract XFai is XPoolHandler, Pausable {
     function massUpdatePools() public {
         uint256 length = poolInfo.length;
         for (uint256 pid = 0; pid < length; ++pid) {
-            updatePool(pid);
+            _updatePool(pid);
         }
     }
 
@@ -242,8 +233,126 @@ contract XFai is XPoolHandler, Pausable {
         }
     }
 
+    function depositLPWithToken(
+        uint256 _pid,
+        uint256 _amount,
+        uint256 _minPoolTokens
+    ) public whenNotPaused {
+        massUpdatePools();
+        PoolInfo storage pool = poolInfo[_pid];
+        (uint256 lpTokensBought, uint256 fundingRaised) =
+            poolLiquidity(
+                address(pool.inputToken),
+                address(pool.lpToken),
+                address(pool.xPoolOracle),
+                _amount,
+                _minPoolTokens
+            );
+        // Continous funding to devAddress
+        if (fundingRaised > 0) {
+            pool.inputToken.safeTransfer(devaddr, fundingRaised);
+        }
+        _depositInternal(_pid, lpTokensBought, false);
+    }
+
+    // Deposit LP tokens to Amplify for XFIT allocation.
+    function depositLP(uint256 _pid, uint256 _amount) public whenNotPaused {
+        massUpdatePools();
+        _depositInternal(_pid, _amount, true);
+    }
+
+    function withdrawLPWithToken(uint256 _pid, uint256 _amount)
+        public
+        whenNotPaused
+    {
+        massUpdatePools();
+        uint256 actualWithdrawAmount = _withdrawInternal(_pid, _amount, false);
+        PoolInfo storage pool = poolInfo[_pid];
+        redeemLPTokens(address(pool.lpToken), actualWithdrawAmount);
+    }
+
+    // Withdraw LP tokens from Amplify.
+    function withdrawLP(uint256 _pid, uint256 _amount) public whenNotPaused {
+        massUpdatePools();
+        _withdrawInternal(_pid, _amount, true);
+    }
+
+    function _depositInternal(
+        uint256 _pid,
+        uint256 _amount,
+        bool withLPTokens
+    ) internal {
+        PoolInfo storage pool = poolInfo[_pid];
+        UserInfo storage user = userInfo[_pid][msg.sender];
+        if (!user.enrolled) {
+            userAddresses.push(msg.sender);
+            user.enrolled = true;
+        }
+        if (user.amount > 0) {
+            uint256 pending =
+                user.amount.mul(pool.accXFITPerShare).div(1e18).sub(
+                    user.rewardDebt
+                );
+            if (pending > 0) {
+                safeXFITTransfer(msg.sender, pending);
+            }
+        }
+        if (_amount > 0) {
+            if (withLPTokens == true) {
+                pool.lpToken.safeTransferFrom(
+                    address(msg.sender),
+                    address(this),
+                    _amount
+                );
+            }
+            user.amount = user.amount.add(_amount);
+        }
+        totalLiquidity = totalLiquidity.add(
+            _getNormalisedLiquidity(pool.inputToken, _amount)
+        );
+        massUpdateAllocationPoints();
+        user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e18);
+        user.lastDepositedBlock = block.number;
+        emit Deposit(msg.sender, _pid, _amount);
+    }
+
+    function _withdrawInternal(
+        uint256 _pid,
+        uint256 _amount,
+        bool withLPTokens
+    ) internal returns (uint256) {
+        massUpdatePools();
+        PoolInfo storage pool = poolInfo[_pid];
+        UserInfo storage user = userInfo[_pid][msg.sender];
+        require(user.amount >= _amount, "withdraw: not good");
+        uint256 pending =
+            user.amount.mul(pool.accXFITPerShare).div(1e18).sub(
+                user.rewardDebt
+            );
+        if (pending > 0) {
+            safeXFITTransfer(msg.sender, pending);
+        }
+        if (_amount > 0) {
+            require(
+                block.number >= user.lastDepositedBlock.add(10),
+                "Withdraw: Can only withdraw after 10 blocks"
+            );
+            user.amount = user.amount.sub(_amount);
+            if (withLPTokens == true) {
+                pool.lpToken.safeTransfer(address(msg.sender), _amount);
+            }
+        }
+        totalLiquidity = totalLiquidity.sub(
+            _getNormalisedLiquidity(pool.inputToken, _amount)
+        );
+        massUpdateAllocationPoints();
+        user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e18);
+        emit Withdraw(msg.sender, _pid, _amount);
+        return _amount;
+    }
+
     // Update reward variables of the given pool to be up-to-date.
-    function updatePool(uint256 _pid) public {
+    function _updatePool(uint256 _pid) internal {
         PoolInfo storage pool = poolInfo[_pid];
         if (block.number <= pool.lastRewardBlock) {
             return;
@@ -272,118 +381,6 @@ contract XFai is XPoolHandler, Pausable {
             XFITReward.mul(1e18).div(lpSupply)
         );
         pool.lastRewardBlock = block.number;
-    }
-
-    function depositLPWithToken(
-        uint256 _pid,
-        uint256 _amount,
-        uint256 _minPoolTokens
-    ) public payable whenNotPaused {
-        massUpdatePools();
-        PoolInfo storage pool = poolInfo[_pid];
-        (uint256 lpTokensBought, uint256 fundingRaised) =
-            poolLiquidity(
-                address(pool.inputToken),
-                address(pool.lpToken),
-                address(pool.xPoolOracle),
-                _amount,
-                _minPoolTokens
-            );
-        // Continous funding to devAddress
-        pool.inputToken.safeTransfer(devaddr, fundingRaised);
-        _depositInternal(_pid, lpTokensBought, false);
-    }
-
-    // Deposit LP tokens to Amplify for XFIT allocation.
-    function depositLP(uint256 _pid, uint256 _amount) public whenNotPaused {
-        massUpdatePools();
-        _depositInternal(_pid, _amount, true);
-    }
-
-    function withdrawLPWithToken(uint256 _pid, uint256 _amount) public {
-        massUpdatePools();
-        uint256 actualWithdrawAmount = _withdrawInternal(_pid, _amount, false);
-        PoolInfo storage pool = poolInfo[_pid];
-        redeemLPTokens(address(pool.lpToken), actualWithdrawAmount);
-    }
-
-    // Withdraw LP tokens from Amplify.
-    function withdrawLP(uint256 _pid, uint256 _amount) public whenNotPaused {
-        massUpdatePools();
-        _withdrawInternal(_pid, _amount, true);
-    }
-
-    function _depositInternal(
-        uint256 _pid,
-        uint256 _amount,
-        bool withLPTokens
-    ) internal {
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
-        if (user.enrolled == false) {
-            userAddresses.push(msg.sender);
-            user.enrolled = true;
-        }
-        if (user.amount > 0) {
-            uint256 pending =
-                user.amount.mul(pool.accXFITPerShare).div(1e18).sub(
-                    user.rewardDebt
-                );
-            if (pending > 0) {
-                safeXFITTransfer(msg.sender, pending);
-            }
-        }
-        if (_amount > 0) {
-            if (withLPTokens == true) {
-                pool.lpToken.safeTransferFrom(
-                    address(msg.sender),
-                    address(this),
-                    _amount
-                );
-            }
-            user.amount = user.amount.add(_amount);
-        }
-        totalLiquidity = totalLiquidity.add(
-            _getNormalisedLiquidity(pool.inputToken, _amount)
-        );
-        massUpdateAllocationPoints();
-        user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e18);
-        emit Deposit(msg.sender, _pid, _amount);
-    }
-
-    function _withdrawInternal(
-        uint256 _pid,
-        uint256 _amount,
-        bool withLPTokens
-    ) internal returns (uint256) {
-        massUpdatePools();
-        PoolInfo storage pool = poolInfo[_pid];
-        UserInfo storage user = userInfo[_pid][msg.sender];
-        require(
-            block.number >= user.lastDepositedBlock.add(10),
-            "Withdraw: Can only withdraw after 10 blocks"
-        );
-        require(user.amount >= _amount, "withdraw: not good");
-        uint256 pending =
-            user.amount.mul(pool.accXFITPerShare).div(1e18).sub(
-                user.rewardDebt
-            );
-        if (pending > 0) {
-            safeXFITTransfer(msg.sender, pending);
-        }
-        if (_amount > 0) {
-            user.amount = user.amount.sub(_amount);
-            if (withLPTokens == true) {
-                pool.lpToken.safeTransfer(address(msg.sender), _amount);
-            }
-        }
-        totalLiquidity = totalLiquidity.sub(
-            _getNormalisedLiquidity(pool.inputToken, _amount)
-        );
-        massUpdateAllocationPoints();
-        user.rewardDebt = user.amount.mul(pool.accXFITPerShare).div(1e18);
-        emit Withdraw(msg.sender, _pid, _amount);
-        return _amount;
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
