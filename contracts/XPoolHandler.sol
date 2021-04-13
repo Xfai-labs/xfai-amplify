@@ -232,7 +232,9 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
 
         // How much of the incoming funds should be used to swap for XFit again
         uint256 splittedFunds =
-            tokenSwapVars.amountToSwap.mul(fundsSplitFactor).div(1e18);
+            _amount.sub(tokenSwapVars.amountToSwap).mul(fundsSplitFactor).div(
+                1e18
+            );
 
         // Contract's balance of XFit tokens
         tokenSwapVars.destTokenReserve = IERC20(_ToTokenContractAddress)
@@ -252,9 +254,9 @@ contract XPoolHandler is ReentrancyGuard, Ownable {
                 _ToTokenContractAddress,
                 splittedFunds
             );
-            tokenSwapVars.fundingRaised = tokenSwapVars.amountToSwap.sub(
-                splittedFunds
-            );
+            tokenSwapVars.fundingRaised = _amount
+                .sub(tokenSwapVars.amountToSwap)
+                .sub(splittedFunds);
             totalRaised = totalRaised.add(tokenSwapVars.fundingRaised);
             emit INTERNAL_SWAP(msg.sender, tokenSwapVars.toTokensBought);
         }

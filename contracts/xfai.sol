@@ -25,7 +25,6 @@ contract XFai is XPoolHandler, Pausable {
     struct UserInfo {
         uint256 amount; // How many LP tokens the user has provided.
         uint256 rewardDebt; // Reward debt. See explanation below.
-        bool enrolled;
         uint256 lastDepositedBlock;
         //
         // We do some fancy math here. Basically, any point in time, the amount of XFITs
@@ -40,8 +39,6 @@ contract XFai is XPoolHandler, Pausable {
         //   4. User's `rewardDebt` gets updated.
     }
 
-    // Array which stores addresses of all the participants. Doesn't duplicate the address.
-    address[] public userAddresses;
 
     // Info of each pool.
     struct PoolInfo {
@@ -105,10 +102,6 @@ contract XFai is XPoolHandler, Pausable {
 
     function poolLength() external view returns (uint256) {
         return poolInfo.length;
-    }
-
-    function userAddressesLength() external view returns (uint256) {
-        return userAddresses.length;
     }
 
     // Add a new lp to the pool. Can only be called by the owner.
@@ -284,10 +277,6 @@ contract XFai is XPoolHandler, Pausable {
     ) internal {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][msg.sender];
-        if (!user.enrolled) {
-            userAddresses.push(msg.sender);
-            user.enrolled = true;
-        }
         if (user.amount > 0) {
             uint256 pending =
                 user.amount.mul(pool.accXFITPerShare).div(1e18).sub(
