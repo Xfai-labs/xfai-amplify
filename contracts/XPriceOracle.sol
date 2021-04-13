@@ -3,16 +3,18 @@ pragma solidity ^0.7.0;
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Factory.sol";
 import "@uniswap/v2-core/contracts/interfaces/IUniswapV2Pair.sol";
 import "@uniswap/lib/contracts/libraries/FixedPoint.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
 import "./interfaces/IXPriceOracle.sol";
 
 import "./lib/UniswapV2OracleLibrary.sol";
 
 // fixed window oracle that recomputes the average price for the entire period once every period
 // note that the price average is only guaranteed to be over at least 1 period, but may be over a longer period
-contract XPriceOracle is IXPriceOracle {
+contract XPriceOracle is IXPriceOracle, Ownable {
     using FixedPoint for *;
 
-    uint256 public constant PERIOD = 1 hours;
+    uint256 public PERIOD = 5 minutes;
 
     IUniswapV2Pair immutable pair;
     address public immutable token0;
@@ -78,5 +80,10 @@ contract XPriceOracle is IXPriceOracle {
             require(token == token1, "XPriceOracle: INVALID_TOKEN");
             amountOut = price1Average.mul(amountIn).decode144();
         }
+    }
+
+    // Owner method
+    function updateOraclePeriod(uint256 _period) public onlyOwner {
+        PERIOD = _period;
     }
 }
