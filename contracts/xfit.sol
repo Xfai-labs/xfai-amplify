@@ -2,10 +2,9 @@
 
 pragma solidity ^0.7.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract Xfit is Ownable, ERC20 {
+contract Xfit is ERC20 {
     constructor(
         string memory _name,
         string memory _symbol,

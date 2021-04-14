@@ -14,7 +14,7 @@ import "./lib/UniswapV2OracleLibrary.sol";
 contract XPriceOracle is IXPriceOracle, Ownable {
     using FixedPoint for *;
 
-    uint256 public PERIOD = 5 minutes;
+    uint256 public PERIOD = 10 minutes;
 
     IUniswapV2Pair immutable pair;
     address public immutable token0;
